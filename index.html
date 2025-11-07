@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Filtro de Contenido Piloto</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Buscador y Filtro de YouTube</h1>
+
+        <div id="config-section" class="config-section" style="display:none;">
+            <h2>⚙️ Configuración</h2>
+            
+            <div class="setting-group">
+                <h3>Clave de API (Guardada localmente)</h3>
+                <input type="text" id="api-key-input" placeholder="Introduce tu Clave de API de YouTube">
+                <button onclick="saveApiKey()">Guardar Clave</button>
+            </div>
+            
+            <div class="setting-group">
+                <h3>Palabras Clave de Filtro (Separadas por coma)</h3>
+                <input type="text" id="filter-keywords-input" placeholder="ej: halloween, bruja, payaso, miedo">
+                <button onclick="saveKeywords()">Guardar Filtros</button>
+            </div>
+
+            <p id="config-message" class="info"></p>
+        </div>
+        
+        <button onclick="toggleConfig()" id="toggle-config-btn">Mostrar Configuración</button>
+        
+        <hr>
+
+        <div class="input-group">
+            <input type="text" id="query" placeholder="Escribe tu búsqueda (ej: videos infantiles)">
+            <button onclick="searchVideos()">Buscar</button>
+        </div>
+        
+        <div id="history-section" style="margin-top: 30px;">
+            <h2>🕒 Vistos Recientemente</h2>
+            <div id="viewed-history" class="video-list">
+                <p class="placeholder-history">Tu historial aparecerá aquí.</p>
+            </div>
+        </div>
+        
+        <hr>
+
+        <div id="results">
+            <p class="placeholder">Resultados de la búsqueda aparecerán aquí.</p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
