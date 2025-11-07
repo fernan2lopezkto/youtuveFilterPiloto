@@ -1,17 +1,22 @@
-// Constantes para las claves de localStorage
+  // Constantes de localStorage y Límite
 const LS_API_KEY = 'youtube_api_key';
 const LS_KEYWORDS = 'filter_keywords';
 const LS_HISTORY = 'video_history';
+const MAX_HISTORY_ITEMS = 20; // Límite de videos en el historial
 
 // Variables globales
 let API_KEY = '';
 const BASE_URL = 'https://www.googleapis.com/youtube/v3/search';
 
-// Inicialización de la aplicación
+// =================================================================
+// 0. INICIALIZACIÓN
+// =================================================================
+
 document.addEventListener('DOMContentLoaded', () => {
     loadConfig();
     renderHistory();
 });
+
 
 // =================================================================
 // 1. GESTIÓN DE LA API KEY Y CONFIGURACIÓN
@@ -24,7 +29,7 @@ function loadConfig() {
         API_KEY = savedApiKey;
         document.getElementById('api-key-input').value = savedApiKey;
     } else {
-        // Forzar la visualización de la configuración si no hay clave
+        // Mostrar config si no hay clave forzando la visualización
         document.getElementById('config-section').style.display = 'block';
         document.getElementById('toggle-config-btn').textContent = 'Ocultar Configuración';
     }
@@ -39,23 +44,26 @@ function loadConfig() {
 function toggleConfig() {
     const configDiv = document.getElementById('config-section');
     const btn = document.getElementById('toggle-config-btn');
-    if (configDiv.style.display === 'none') {
-        configDiv.style.display = 'block';
-        btn.textContent = 'Ocultar Configuración';
-    } else {
+    const isVisible = configDiv.style.display === 'block';
+
+    if (isVisible) {
         configDiv.style.display = 'none';
         btn.textContent = 'Mostrar Configuración';
+    } else {
+        configDiv.style.display = 'block';
+        btn.textContent = 'Ocultar Configuración';
     }
 }
 
 function saveApiKey() {
     const apiKeyInput = document.getElementById('api-key-input').value.trim();
+    const configMessage = document.getElementById('config-message');
     if (apiKeyInput) {
         localStorage.setItem(LS_API_KEY, apiKeyInput);
         API_KEY = apiKeyInput;
-        document.getElementById('config-message').textContent = '✅ Clave de API guardada exitosamente.';
+        configMessage.textContent = '✅ Clave de API guardada exitosamente.';
     } else {
-        document.getElementById('config-message').textContent = '❌ Por favor, ingresa una clave válida.';
+        configMessage.textContent = '❌ Por favor, ingresa una clave válida.';
     }
 }
 
@@ -71,16 +79,12 @@ function saveKeywords() {
 
 function getFilterKeywords() {
     const keywordsString = localStorage.getItem(LS_KEYWORDS) || '';
-    // Separar por coma y limpiar espacios, filtrar vacíos y convertir a minúsculas
     return keywordsString.split(',').map(k => k.trim().toLowerCase()).filter(k => k);
 }
 
-/**
- * Filtra el video basado en el título y la descripción.
- */
 function filterVideo(snippet) {
     const keywords = getFilterKeywords();
-    if (keywords.length === 0) return false; // No hay filtros activos
+    if (keywords.length === 0) return false; 
     
     const title = snippet.title.toLowerCase();
     const description = snippet.description.toLowerCase();
@@ -94,20 +98,23 @@ function filterVideo(snippet) {
 }
 
 // =================================================================
-// 3. GESTIÓN DEL HISTORIAL
+// 3. GESTIÓN DEL HISTORIAL (Corregido y límite a 20)
 // =================================================================
 
 function addToHistory(video) {
     let history = JSON.parse(localStorage.getItem(LS_HISTORY) || '[]');
     
-    // Eliminar si ya existe para moverlo al principio
-    history = history.filter(v => v.id.videoId !== video.id.videoId);
+    // Usamos el id.videoId para el identificador único
+    const videoId = video.id.videoId;
+
+    // Eliminar si ya existe para moverlo al principio (evita duplicados)
+    history = history.filter(v => v.id.videoId !== videoId);
     
     // Añadir el nuevo video al inicio
     history.unshift(video);
     
-    // Limitar el historial a 5 videos para mantenerlo manejable
-    history = history.slice(0, 5); 
+    // Limitar el historial a 20 videos
+    history = history.slice(0, MAX_HISTORY_ITEMS); 
     
     localStorage.setItem(LS_HISTORY, JSON.stringify(history));
     renderHistory();
@@ -116,16 +123,23 @@ function addToHistory(video) {
 function renderHistory() {
     const historyDiv = document.getElementById('viewed-history');
     const history = JSON.parse(localStorage.getItem(LS_HISTORY) || '[]');
-    historyDiv.innerHTML = '';
-    
+    historyDiv.innerHTML = ''; // Limpiar
+
     if (history.length === 0) {
         historyDiv.innerHTML = '<p class="placeholder-history">Tu historial aparecerá aquí después de ver un video.</p>';
         return;
     }
 
     history.forEach(video => {
-        historyDiv.appendChild(createVideoElement(video, 'history'));
+        // Aseguramos que el video no se muestre si es filtrado por la configuración actual
+        if (!filterVideo(video.snippet)) {
+            historyDiv.appendChild(createVideoElement(video, 'history'));
+        }
     });
+
+    if (historyDiv.innerHTML === '') {
+        historyDiv.innerHTML = `<p class="placeholder-history">Tu historial está vacío o todos los videos fueron filtrados por las palabras clave.</p>`;
+    }
 }
 
 
@@ -138,33 +152,43 @@ function createVideoElement(video, type = 'result') {
     videoElement.className = `video-item ${type}`;
     
     const videoId = video.id.videoId;
-    // Añadimos 'enablejsapi=1' para futura interacción si la necesitamos
-    const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0&enablejsapi=1`;
     
+    // URL de EMBED con rel=0 (sugerencias del mismo canal) y modestbranding=1 (elimina el logo/botón "Ver en YT")
+    const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0&enablejsapi=1&modestbranding=1`;
+    
+    // Usamos 'data-' atributos para pasar los datos al listener
     videoElement.innerHTML = `
         <iframe class="video-player"
             src="${embedUrl}"
             frameborder="0" 
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
             allowfullscreen 
-            data-video-id="${videoId}"
-            onload="setupIframeListener(this, ${JSON.stringify(video).replace(/'/g, "\\'")})"> 
+            data-video-id="${videoId}">
         </iframe>
         <h3>${video.snippet.title}</h3>
         <p>Canal: ${video.snippet.channelTitle}</p>
         <p class="id-text">ID: ${videoId}</p>
     `;
-    return videoElement;
-}
 
-// Escucha el evento 'click' del iframe para registrar la vista en el historial
-function setupIframeListener(iframe, videoData) {
-    // Usamos el evento 'onload' del iframe para saber cuándo está listo para la interacción
-    // En un proyecto real con el API de YouTube JS, se usaría player.addEventListener('onStateChange').
-    // Para esta prueba simple, solo detectaremos el clic en el elemento padre o un enfoque.
-    iframe.contentWindow.addEventListener('focus', () => {
-        addToHistory(videoData);
+    // ========== INICIO DE LA CORRECCIÓN ==========
+    // Antes intentabas escuchar 'iframe.contentWindow.addEventListener'
+    // lo cual falla por permisos (Same-Origin Policy) en GitHub Pages.
+    
+    const iframe = videoElement.querySelector('iframe');
+    
+    // Solución: Escuchamos el 'focus' directamente sobre el elemento <iframe>.
+    // Esto se dispara cuando el usuario hace clic en el reproductor para verlo.
+    iframe.addEventListener('focus', () => {
+        // Solo agregamos al historial si es un video de resultados (no del historial mismo)
+        // Opcional: Podrías quitar este 'if' si querés que se re-agregue al tope
+        // cada vez que se ve desde el historial.
+        if (type === 'result') {
+            addToHistory(video);
+        }
     });
+    // ========== FIN DE LA CORRECCIÓN ==========
+
+    return videoElement;
 }
 
 
@@ -190,8 +214,8 @@ async function searchVideos() {
         q: query,
         key: API_KEY,
         type: 'video', 
-        maxResults: 20, // Aumentar a 20 resultados
-        videoEmbeddable: 'true' // Asegurar que los videos se puedan incrustar
+        maxResults: 20, // 20 resultados
+        videoEmbeddable: 'true' 
     });
 
     const url = `${BASE_URL}?${params.toString()}`;
@@ -212,7 +236,7 @@ async function searchVideos() {
         }
 
     } catch (error) {
-        resultsDiv.innerHTML = `<p class="error">Error de red: ${error.message}.</p>`;
+        resultsDiv.innerHTML = `<p class="error">Error de red: ${error.message}.</Ttipo_de_datosp>`;
         console.error('Fetch Error:', error);
     }
 }
@@ -224,13 +248,11 @@ function renderSearchResults(videos) {
     let renderedCount = 0;
 
     videos.forEach(video => {
-        // Ignorar si el video no tiene ID (a veces pasa con canales o listas)
         if (!video.id || !video.id.videoId) return;
 
         // --- APLICACIÓN DEL FILTRO ---
         if (filterVideo(video.snippet)) {
             filteredCount++;
-            console.log(`[FILTRADO] Video "${video.snippet.title}" contiene palabra clave prohibida.`);
             return; 
         }
         // -----------------------------
@@ -246,4 +268,4 @@ function renderSearchResults(videos) {
     } else if (filteredCount > 0) {
         resultsDiv.insertAdjacentHTML('afterbegin', `<p class="info">ℹ️ Se han filtrado ${filteredCount} videos por tus palabras clave definidas.</p>`);
     }
-}
+                                                }
