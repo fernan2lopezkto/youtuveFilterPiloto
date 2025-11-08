@@ -2,7 +2,8 @@
 const LS_API_KEY = 'youtube_api_key';
 const LS_KEYWORDS = 'filter_keywords';
 const LS_HISTORY = 'video_history';
-const MAX_HISTORY_ITEMS = 20; // Límite de videos en el historial
+const LS_THEME = 'youtube_filter_theme'; // <-- NUEVA CONSTANTE
+const MAX_HISTORY_ITEMS = 20; 
 
 // Variables globales
 let API_KEY = '';
@@ -15,10 +16,7 @@ const BASE_URL = 'https://www.googleapis.com/youtube/v3/search';
 document.addEventListener('DOMContentLoaded', () => {
     loadConfig();
     renderHistory();
-    // Revisa si la config está abierta o cerrada
-    document.getElementById('config-toggle-cb').addEventListener('change', (e) => {
-        // Esto es solo para que el texto del botón no sea necesario
-    });
+    setupTheme(); // <-- NUEVA LLAMADA
 });
 
 
@@ -33,7 +31,6 @@ function loadConfig() {
         API_KEY = savedApiKey;
         document.getElementById('api-key-input').value = savedApiKey;
     } else {
-        // Mostrar config si no hay clave forzando la visualización
         document.getElementById('config-toggle-cb').checked = true;
     }
 
@@ -47,7 +44,6 @@ function loadConfig() {
 // Ya no es necesario, usamos el checkbox de DaisyUI
 function toggleConfig() { }
 
-// Función para mostrar mensajes de config
 function showConfigMessage(message, type = 'success') {
     const container = document.getElementById('config-message-container');
     const alertType = type === 'success' ? 'alert-success' : 'alert-error';
@@ -57,7 +53,6 @@ function showConfigMessage(message, type = 'success') {
             <span>${message}</span>
         </div>
     `;
-    // Borrar el mensaje después de 3 segundos
     setTimeout(() => {
         container.innerHTML = '';
     }, 3000);
@@ -78,10 +73,7 @@ function saveKeywords() {
     const keywordsInput = document.getElementById('filter-keywords-input').value.trim();
     localStorage.setItem(LS_KEYWORDS, keywordsInput);
     showConfigMessage('✅ Palabras clave de filtro guardadas exitosamente.', 'success');
-    
-    // IMPORTANTE: Refrescar el historial al guardar nuevas palabras clave
     renderHistory();
-    // Podríamos también refrescar los resultados si los hay
 }
 
 // =================================================================
@@ -97,16 +89,15 @@ function filterVideo(snippet) {
     const keywords = getFilterKeywords();
     if (keywords.length === 0) return false; 
     
-    // Sanitizar un poco los inputs
     const title = (snippet.title || '').toLowerCase();
     const description = (snippet.description || '').toLowerCase();
 
     for (const keyword of keywords) {
         if (title.includes(keyword) || description.includes(keyword)) {
-            return true; // Filtrar (Ocultar) este video
+            return true; 
         }
     }
-    return false; // Mostrar este video
+    return false;
 }
 
 // =================================================================
@@ -117,22 +108,18 @@ function addToHistory(video) {
     let history = JSON.parse(localStorage.getItem(LS_HISTORY) || '[]');
     const videoId = video.id.videoId;
     
-    history = history.filter(v => v.id.videoId !== videoId); // Eliminar duplicados
-    history.unshift(video); // Añadir al inicio
-    history = history.slice(0, MAX_HISTORY_ITEMS); // Limitar a 20
+    history = history.filter(v => v.id.videoId !== videoId);
+    history.unshift(video);
+    history = history.slice(0, MAX_HISTORY_ITEMS); 
     
     localStorage.setItem(LS_HISTORY, JSON.stringify(history));
-    
-    // No llamamos a renderHistory() para optimizar, 
-    // en su lugar, actualizamos el DOM directamente (aunque tu método original es más simple)
-    // Dejamos tu lógica original: renderHistory() asegura que los filtros se apliquen
     renderHistory();
 }
 
 function renderHistory() {
     const historyDiv = document.getElementById('viewed-history');
     const history = JSON.parse(localStorage.getItem(LS_HISTORY) || '[]');
-    historyDiv.innerHTML = ''; // Limpiar
+    historyDiv.innerHTML = ''; 
 
     if (history.length === 0) {
         historyDiv.innerHTML = `<div class="alert alert-info shadow-sm">
@@ -143,7 +130,6 @@ function renderHistory() {
 
     let renderedCount = 0;
     history.forEach(video => {
-        // Aseguramos que el video no se muestre si es filtrado por la configuración actual
         if (!filterVideo(video.snippet)) {
             historyDiv.appendChild(createVideoElement(video, 'history'));
             renderedCount++;
@@ -163,7 +149,6 @@ function renderHistory() {
 // =================================================================
 
 function createVideoElement(video, type = 'result') {
-    // Usamos clases de DaisyUI: card
     const videoElement = document.createElement('div');
     videoElement.className = `card card-compact bg-base-100 shadow-md ${type}`;
     
@@ -190,26 +175,18 @@ function createVideoElement(video, type = 'result') {
         </div>
     `;
 
-    // ========== INICIO DE LA CORRECCIÓN (MÓVIL) ==========
     const overlay = videoElement.querySelector('.video-overlay');
     
-    // Usamos 'once: true' para que el listener se ejecute una sola vez
     overlay.addEventListener('click', () => {
         if (type === 'result') {
             addToHistory(video);
         }
-        // Ocultamos el overlay para permitir futuros clics (pausa, etc.)
         overlay.style.display = 'none';
-        
-        // (Opcional) Podríamos intentar auto-enfocar el iframe
-        // videoElement.querySelector('iframe').focus();
     }, { once: true });
-    // ========== FIN DE LA CORRECCIÓN ==========
 
     return videoElement;
 }
 
-// Función para mostrar mensajes en el div de resultados
 function showResultMessage(message, type = 'info') {
     const resultsDiv = document.getElementById('results');
     let alertType = 'alert-info';
@@ -228,7 +205,7 @@ async function searchVideos() {
     
     if (!API_KEY) {
         showResultMessage('❌ La Clave de API no está configurada. Por favor, guárdala en Configuración.', 'error');
-        document.getElementById('config-toggle-cb').checked = true; // Abrir config
+        document.getElementById('config-toggle-cb').checked = true;
         return;
     }
     
@@ -238,7 +215,7 @@ async function searchVideos() {
         return;
     }
 
-    resultsDiv.innerHTML = `<div class="skeleton w-full h-32"></div>`; // Esqueleto de carga
+    resultsDiv.innerHTML = `<div class="skeleton w-full h-32"></div>`; 
 
     const params = new URLSearchParams({
         part: 'snippet',
@@ -295,7 +272,6 @@ function renderSearchResults(videos) {
     } else if (renderedCount === 0 && filteredCount === 0) {
         showResultMessage('No se encontraron videos que coincidieran con la búsqueda.', 'info');
     } else if (filteredCount > 0) {
-        // Añadir mensaje de videos filtrados al inicio
         resultsDiv.insertAdjacentHTML('afterbegin', `
             <div class="alert alert-success shadow-sm mb-4">
                 <span>ℹ️ Se han filtrado ${filteredCount} videos por tus palabras clave.</span>
@@ -303,3 +279,43 @@ function renderSearchResults(videos) {
         `);
     }
 }
+
+
+// =================================================================
+// 5. GESTIÓN DEL TEMA (MODO OSCURO)
+// =================================================================
+
+function setupTheme() {
+    const themeToggle = document.getElementById('theme-toggle');
+    const htmlElement = document.documentElement; // El <html> tag
+
+    // 1. Cargar el tema guardado al iniciar
+    const savedTheme = localStorage.getItem(LS_THEME);
+    
+    if (savedTheme) {
+        htmlElement.setAttribute('data-theme', savedTheme);
+        if (savedTheme === 'night') {
+            themeToggle.checked = true;
+        } else {
+            themeToggle.checked = false;
+        }
+    } else {
+        // Por defecto usamos 'cupcake' (claro)
+        htmlElement.setAttribute('data-theme', 'cupcake');
+        themeToggle.checked = false;
+    }
+
+    // 2. Escuchar cambios en el toggle
+    themeToggle.addEventListener('change', (e) => {
+        if (e.target.checked) {
+            // Es modo oscuro
+            htmlElement.setAttribute('data-theme', 'night');
+            localStorage.setItem(LS_THEME, 'night');
+        } else {
+            // Es modo claro
+            htmlElement.setAttribute('data-theme', 'cupcake');
+            localStorage.setItem(LS_THEME, 'cupcake');
+        }
+    });
+        }
+            
