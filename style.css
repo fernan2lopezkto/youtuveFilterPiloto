@@ -1,174 +1,47 @@
-body {
-    font-family: sans-serif;
-    margin: 0;
-    padding: 0;
-    background-color: #f4f4f4;
+/* --- Arreglo para el clic en móviles --- */
+
+/* 1. El 'wrapper' (contenedor) debe tener posición relativa */
+.video-player-wrapper {
+    position: relative;
+    /* Mantenemos el aspecto 16:9 para el video */
+    padding-top: 56.25%; /* 16:9 Aspect Ratio (divide 9 por 16) */
+    height: 0;
+    overflow: hidden;
+    background-color: #000; /* Fondo negro mientras carga */
 }
 
-.container {
-    max-width: 600px;
-    margin: 20px auto;
-    padding: 20px;
-    background-color: white;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-}
-
-h1 {
-    text-align: center;
-    color: #cc0000;
-}
-
-.input-group {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-#query {
-    flex-grow: 1;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 16px;
-}
-
-button {
-    padding: 10px 15px;
-    background-color: #cc0000;
-    color: white;
+/* 2. El iframe y el overlay son absolutos DENTRO del wrapper */
+.video-player,
+.video-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     border: none;
-    border-radius: 4px;
+}
+
+/* 3. El overlay es transparente y se pone ENCIMA de todo */
+.video-overlay {
+    z-index: 10;
     cursor: pointer;
-    font-size: 16px;
+    /* transparente */
+    background-color: rgba(0,0,0,0); 
 }
 
-button:hover {
-    background-color: #a00000;
-}
+/* -------------------------------------- */
 
-#results {
-    border-top: 1px solid #eee;
-    padding-top: 10px;
-}
-
-.video-item {
-    padding: 15px 0;
-    border-bottom: 1px solid #eee;
-    display: flex;
-    flex-direction: column;
-}
-
-.video-item:last-child {
-    border-bottom: none;
-}
-
-.video-item img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 4px;
-    margin-bottom: 10px;
-}
-
-.video-item a {
-    text-decoration: none;
-    color: #333;
-}
-
-.video-item h3 {
-    margin: 0 0 5px 0;
-    font-size: 18px;
-}
-
+/* Clases de texto que ya no usamos (DaisyUI las maneja) */
 .id-text {
     font-size: 12px;
     color: #777;
+    opacity: 0.7;
 }
-
-.error, .placeholder {
-    color: red;
-    text-align: center;
-    padding: 10px;
-}
-
-/* ... [MANTENER ESTILOS ANTERIORES] ... */
-
-/* Nuevos estilos para la Configuración */
-.config-section {
-    padding: 15px;
-    border: 1px dashed #ccc;
-    background-color: #fff9f9;
-    margin-bottom: 20px;
-    border-radius: 8px;
-}
-
-.setting-group {
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 1px dotted #e0e0e0;
-}
-
-.setting-group h3 {
-    margin: 0 0 10px 0;
-    font-size: 1em;
-    color: #555;
-}
-
-#api-key-input, #filter-keywords-input {
-    width: 100%;
-    box-sizing: border-box;
-    margin-bottom: 10px;
-}
-
-.info {
-    color: #006600;
-    background-color: #e6ffe6;
-    border: 1px solid #006600;
-    padding: 8px;
-    border-radius: 4px;
-    text-align: center;
-    margin-top: 10px;
-}
-
-/* Estilos para el Historial y Resultados */
-#history-section h2 {
-    color: #333;
-    border-bottom: 2px solid #ddd;
-    padding-bottom: 5px;
-}
-
-.placeholder-history {
-    color: #999;
-    font-style: italic;
-    text-align: center;
-}
-
-.video-item.history {
-    opacity: 0.7; /* Para diferenciar el historial */
-    padding: 10px 0;
-}
-
-.video-list {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-/* Estilo para el botón de configuración */
-#toggle-config-btn {
-    width: 100%;
-    margin-bottom: 15px;
-    background-color: #555;
-}
-
-#toggle-config-btn:hover {
-    background-color: #333;
-}
-
 
 /* Ajustes para móviles */
 @media (max-width: 600px) {
     .container {
-        margin: 10px;
-        padding: 10px;
+        margin: 0;
+        padding: 8px;
     }
 }
