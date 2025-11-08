@@ -1,4 +1,4 @@
-  // Constantes de localStorage y Límite
+// Constantes de localStorage y Límite
 const LS_API_KEY = 'youtube_api_key';
 const LS_KEYWORDS = 'filter_keywords';
 const LS_HISTORY = 'video_history';
@@ -15,6 +15,10 @@ const BASE_URL = 'https://www.googleapis.com/youtube/v3/search';
 document.addEventListener('DOMContentLoaded', () => {
     loadConfig();
     renderHistory();
+    // Revisa si la config está abierta o cerrada
+    document.getElementById('config-toggle-cb').addEventListener('change', (e) => {
+        // Esto es solo para que el texto del botón no sea necesario
+    });
 });
 
 
@@ -30,8 +34,7 @@ function loadConfig() {
         document.getElementById('api-key-input').value = savedApiKey;
     } else {
         // Mostrar config si no hay clave forzando la visualización
-        document.getElementById('config-section').style.display = 'block';
-        document.getElementById('toggle-config-btn').textContent = 'Ocultar Configuración';
+        document.getElementById('config-toggle-cb').checked = true;
     }
 
     // Cargar Palabras Clave
@@ -41,36 +44,44 @@ function loadConfig() {
     }
 }
 
-function toggleConfig() {
-    const configDiv = document.getElementById('config-section');
-    const btn = document.getElementById('toggle-config-btn');
-    const isVisible = configDiv.style.display === 'block';
+// Ya no es necesario, usamos el checkbox de DaisyUI
+function toggleConfig() { }
 
-    if (isVisible) {
-        configDiv.style.display = 'none';
-        btn.textContent = 'Mostrar Configuración';
-    } else {
-        configDiv.style.display = 'block';
-        btn.textContent = 'Ocultar Configuración';
-    }
+// Función para mostrar mensajes de config
+function showConfigMessage(message, type = 'success') {
+    const container = document.getElementById('config-message-container');
+    const alertType = type === 'success' ? 'alert-success' : 'alert-error';
+    
+    container.innerHTML = `
+        <div class="alert ${alertType} shadow-sm">
+            <span>${message}</span>
+        </div>
+    `;
+    // Borrar el mensaje después de 3 segundos
+    setTimeout(() => {
+        container.innerHTML = '';
+    }, 3000);
 }
 
 function saveApiKey() {
     const apiKeyInput = document.getElementById('api-key-input').value.trim();
-    const configMessage = document.getElementById('config-message');
     if (apiKeyInput) {
         localStorage.setItem(LS_API_KEY, apiKeyInput);
         API_KEY = apiKeyInput;
-        configMessage.textContent = '✅ Clave de API guardada exitosamente.';
+        showConfigMessage('✅ Clave de API guardada exitosamente.', 'success');
     } else {
-        configMessage.textContent = '❌ Por favor, ingresa una clave válida.';
+        showConfigMessage('❌ Por favor, ingresa una clave válida.', 'error');
     }
 }
 
 function saveKeywords() {
     const keywordsInput = document.getElementById('filter-keywords-input').value.trim();
     localStorage.setItem(LS_KEYWORDS, keywordsInput);
-    document.getElementById('config-message').textContent = '✅ Palabras clave de filtro guardadas exitosamente.';
+    showConfigMessage('✅ Palabras clave de filtro guardadas exitosamente.', 'success');
+    
+    // IMPORTANTE: Refrescar el historial al guardar nuevas palabras clave
+    renderHistory();
+    // Podríamos también refrescar los resultados si los hay
 }
 
 // =================================================================
@@ -86,8 +97,9 @@ function filterVideo(snippet) {
     const keywords = getFilterKeywords();
     if (keywords.length === 0) return false; 
     
-    const title = snippet.title.toLowerCase();
-    const description = snippet.description.toLowerCase();
+    // Sanitizar un poco los inputs
+    const title = (snippet.title || '').toLowerCase();
+    const description = (snippet.description || '').toLowerCase();
 
     for (const keyword of keywords) {
         if (title.includes(keyword) || description.includes(keyword)) {
@@ -98,25 +110,22 @@ function filterVideo(snippet) {
 }
 
 // =================================================================
-// 3. GESTIÓN DEL HISTORIAL (Corregido y límite a 20)
+// 3. GESTIÓN DEL HISTORIAL
 // =================================================================
 
 function addToHistory(video) {
     let history = JSON.parse(localStorage.getItem(LS_HISTORY) || '[]');
-    
-    // Usamos el id.videoId para el identificador único
     const videoId = video.id.videoId;
-
-    // Eliminar si ya existe para moverlo al principio (evita duplicados)
-    history = history.filter(v => v.id.videoId !== videoId);
     
-    // Añadir el nuevo video al inicio
-    history.unshift(video);
-    
-    // Limitar el historial a 20 videos
-    history = history.slice(0, MAX_HISTORY_ITEMS); 
+    history = history.filter(v => v.id.videoId !== videoId); // Eliminar duplicados
+    history.unshift(video); // Añadir al inicio
+    history = history.slice(0, MAX_HISTORY_ITEMS); // Limitar a 20
     
     localStorage.setItem(LS_HISTORY, JSON.stringify(history));
+    
+    // No llamamos a renderHistory() para optimizar, 
+    // en su lugar, actualizamos el DOM directamente (aunque tu método original es más simple)
+    // Dejamos tu lógica original: renderHistory() asegura que los filtros se apliquen
     renderHistory();
 }
 
@@ -126,95 +135,117 @@ function renderHistory() {
     historyDiv.innerHTML = ''; // Limpiar
 
     if (history.length === 0) {
-        historyDiv.innerHTML = '<p class="placeholder-history">Tu historial aparecerá aquí después de ver un video.</p>';
+        historyDiv.innerHTML = `<div class="alert alert-info shadow-sm">
+            <span>Tu historial aparecerá aquí después de ver un video.</span>
+        </div>`;
         return;
     }
 
+    let renderedCount = 0;
     history.forEach(video => {
         // Aseguramos que el video no se muestre si es filtrado por la configuración actual
         if (!filterVideo(video.snippet)) {
             historyDiv.appendChild(createVideoElement(video, 'history'));
+            renderedCount++;
         }
     });
 
-    if (historyDiv.innerHTML === '') {
-        historyDiv.innerHTML = `<p class="placeholder-history">Tu historial está vacío o todos los videos fueron filtrados por las palabras clave.</p>`;
+    if (renderedCount === 0) {
+        historyDiv.innerHTML = `<div class="alert alert-warning shadow-sm">
+            <span>Tu historial está vacío o todos los videos fueron filtrados.</span>
+        </div>`;
     }
 }
 
 
 // =================================================================
-// 4. BÚSQUEDA Y RENDERIZADO
+// 4. BÚSQUEDA Y RENDERIZADO (CON LA SOLUCIÓN DEL OVERLAY)
 // =================================================================
 
 function createVideoElement(video, type = 'result') {
+    // Usamos clases de DaisyUI: card
     const videoElement = document.createElement('div');
-    videoElement.className = `video-item ${type}`;
+    videoElement.className = `card card-compact bg-base-100 shadow-md ${type}`;
     
     const videoId = video.id.videoId;
-    
-    // URL de EMBED con rel=0 (sugerencias del mismo canal) y modestbranding=1 (elimina el logo/botón "Ver en YT")
+    const videoTitle = video.snippet.title;
     const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0&enablejsapi=1&modestbranding=1`;
     
-    // Usamos 'data-' atributos para pasar los datos al listener
     videoElement.innerHTML = `
-        <iframe class="video-player"
-            src="${embedUrl}"
-            frameborder="0" 
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-            allowfullscreen 
-            data-video-id="${videoId}">
-        </iframe>
-        <h3>${video.snippet.title}</h3>
-        <p>Canal: ${video.snippet.channelTitle}</p>
-        <p class="id-text">ID: ${videoId}</p>
+        <div class="video-player-wrapper">
+            <iframe class="video-player"
+                src="${embedUrl}"
+                frameborder="0" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowfullscreen 
+                title="Reproductor: ${videoTitle}"
+                data-video-id="${videoId}">
+            </iframe>
+            <div class="video-overlay" aria-label="Reproducir video ${videoTitle}"></div>
+        </div>
+        <div class="card-body">
+            <h3 class="card-title text-base">${videoTitle}</h3>
+            <p class="text-sm">Canal: ${video.snippet.channelTitle}</p>
+            <p class="id-text">ID: ${videoId}</p>
+        </div>
     `;
 
-    // ========== INICIO DE LA CORRECCIÓN ==========
-    // Antes intentabas escuchar 'iframe.contentWindow.addEventListener'
-    // lo cual falla por permisos (Same-Origin Policy) en GitHub Pages.
+    // ========== INICIO DE LA CORRECCIÓN (MÓVIL) ==========
+    const overlay = videoElement.querySelector('.video-overlay');
     
-    const iframe = videoElement.querySelector('iframe');
-    
-    // Solución: Escuchamos el 'focus' directamente sobre el elemento <iframe>.
-    // Esto se dispara cuando el usuario hace clic en el reproductor para verlo.
-    iframe.addEventListener('focus', () => {
-        // Solo agregamos al historial si es un video de resultados (no del historial mismo)
-        // Opcional: Podrías quitar este 'if' si querés que se re-agregue al tope
-        // cada vez que se ve desde el historial.
+    // Usamos 'once: true' para que el listener se ejecute una sola vez
+    overlay.addEventListener('click', () => {
         if (type === 'result') {
             addToHistory(video);
         }
-    });
+        // Ocultamos el overlay para permitir futuros clics (pausa, etc.)
+        overlay.style.display = 'none';
+        
+        // (Opcional) Podríamos intentar auto-enfocar el iframe
+        // videoElement.querySelector('iframe').focus();
+    }, { once: true });
     // ========== FIN DE LA CORRECCIÓN ==========
 
     return videoElement;
 }
 
+// Función para mostrar mensajes en el div de resultados
+function showResultMessage(message, type = 'info') {
+    const resultsDiv = document.getElementById('results');
+    let alertType = 'alert-info';
+    if (type === 'error') alertType = 'alert-error';
+    if (type === 'warning') alertType = 'alert-warning';
+
+    resultsDiv.innerHTML = `
+        <div class="alert ${alertType} shadow-sm">
+            <span>${message}</span>
+        </div>
+    `;
+}
 
 async function searchVideos() {
     const resultsDiv = document.getElementById('results');
     
     if (!API_KEY) {
-        resultsDiv.innerHTML = '<p class="error">❌ La Clave de API no está configurada. Por favor, guárdala en Configuración.</p>';
-        document.getElementById('config-section').style.display = 'block';
+        showResultMessage('❌ La Clave de API no está configurada. Por favor, guárdala en Configuración.', 'error');
+        document.getElementById('config-toggle-cb').checked = true; // Abrir config
         return;
     }
     
     const query = document.getElementById('query').value;
     if (!query) {
-        resultsDiv.innerHTML = '<p class="error">Por favor, escribe una consulta.</p>';
+        showResultMessage('Por favor, escribe una consulta.', 'warning');
         return;
     }
 
-    resultsDiv.innerHTML = '<p>Buscando videos...</p>';
+    resultsDiv.innerHTML = `<div class="skeleton w-full h-32"></div>`; // Esqueleto de carga
 
     const params = new URLSearchParams({
         part: 'snippet',
         q: query,
         key: API_KEY,
         type: 'video', 
-        maxResults: 20, // 20 resultados
+        maxResults: 20,
         videoEmbeddable: 'true' 
     });
 
@@ -225,18 +256,18 @@ async function searchVideos() {
         const data = await response.json();
 
         if (data.error) {
-            resultsDiv.innerHTML = `<p class="error">Error de API: ${data.error.message}. Verifica tu clave y la cuota.</p>`;
+            showResultMessage(`Error de API: ${data.error.message}. Verifica tu clave y la cuota.`, 'error');
             return;
         }
 
         if (data.items && data.items.length > 0) {
             renderSearchResults(data.items);
         } else {
-            resultsDiv.innerHTML = '<p>No se encontraron videos para esa búsqueda.</p>';
+            showResultMessage('No se encontraron videos para esa búsqueda.', 'info');
         }
 
     } catch (error) {
-        resultsDiv.innerHTML = `<p class="error">Error de red: ${error.message}.</Ttipo_de_datosp>`;
+        showResultMessage(`Error de red: ${error.message}.`, 'error');
         console.error('Fetch Error:', error);
     }
 }
@@ -250,22 +281,25 @@ function renderSearchResults(videos) {
     videos.forEach(video => {
         if (!video.id || !video.id.videoId) return;
 
-        // --- APLICACIÓN DEL FILTRO ---
         if (filterVideo(video.snippet)) {
             filteredCount++;
             return; 
         }
-        // -----------------------------
-
+        
         resultsDiv.appendChild(createVideoElement(video, 'result'));
         renderedCount++;
     });
     
     if (renderedCount === 0 && filteredCount > 0) {
-        resultsDiv.innerHTML = `<p class="placeholder">Se filtraron ${filteredCount} videos de los resultados. Intenta otra búsqueda.</p>`;
+        showResultMessage(`Se filtraron ${filteredCount} videos de los resultados. Intenta otra búsqueda.`, 'warning');
     } else if (renderedCount === 0 && filteredCount === 0) {
-        resultsDiv.innerHTML = '<p class="placeholder">No se encontraron videos que coincidieran con la búsqueda.</p>';
+        showResultMessage('No se encontraron videos que coincidieran con la búsqueda.', 'info');
     } else if (filteredCount > 0) {
-        resultsDiv.insertAdjacentHTML('afterbegin', `<p class="info">ℹ️ Se han filtrado ${filteredCount} videos por tus palabras clave definidas.</p>`);
+        // Añadir mensaje de videos filtrados al inicio
+        resultsDiv.insertAdjacentHTML('afterbegin', `
+            <div class="alert alert-success shadow-sm mb-4">
+                <span>ℹ️ Se han filtrado ${filteredCount} videos por tus palabras clave.</span>
+            </div>
+        `);
     }
-                                                }
+}
