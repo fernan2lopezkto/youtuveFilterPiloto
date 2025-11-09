@@ -2,7 +2,7 @@
 const LS_API_KEY = 'youtube_api_key';
 const LS_KEYWORDS = 'filter_keywords';
 const LS_HISTORY = 'video_history';
-const LS_THEME = 'youtube_filter_theme'; // <-- NUEVA CONSTANTE
+const LS_THEME = 'youtube_filter_theme'; 
 const MAX_HISTORY_ITEMS = 20; 
 
 // Variables globales
@@ -10,22 +10,50 @@ let API_KEY = '';
 const BASE_URL = 'https://www.googleapis.com/youtube/v3/search';
 
 // =================================================================
-// 0. INICIALIZACIÓN
+// 0. INICIALIZACIÓN Y CONFIGURACIÓN
 // =================================================================
 
 document.addEventListener('DOMContentLoaded', () => {
     loadConfig();
     renderHistory();
-    setupTheme(); // <-- NUEVA LLAMADA
+    setupTheme();
+    
+    // Renderizar los iconos de Lucide
+    lucide.createIcons();
 });
+
+
+// Función para navegar entre secciones (usada por el btm-nav)
+function scrollToSection(id) {
+    let element;
+    
+    if (id === 'top') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+    }
+
+    element = document.getElementById(id);
+
+    if (element) {
+        // Obtenemos la posición del elemento. Restamos para compensar el navbar fijo.
+        const headerOffset = 64; // Altura aproximada del navbar fijo en escritorio (lg:pt-16)
+        const elementPosition = element.getBoundingClientRect().top;
+        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+        window.scrollTo({
+            top: offsetPosition,
+            behavior: 'smooth'
+        });
+    }
+}
 
 
 // =================================================================
 // 1. GESTIÓN DE LA API KEY Y CONFIGURACIÓN
 // =================================================================
+// ... (Funciones loadConfig, showConfigMessage, saveApiKey, saveKeywords sin cambios) ...
 
 function loadConfig() {
-    // Cargar API Key
     const savedApiKey = localStorage.getItem(LS_API_KEY);
     if (savedApiKey) {
         API_KEY = savedApiKey;
@@ -33,29 +61,17 @@ function loadConfig() {
     } else {
         document.getElementById('config-toggle-cb').checked = true;
     }
-
-    // Cargar Palabras Clave
     const savedKeywords = localStorage.getItem(LS_KEYWORDS);
     if (savedKeywords) {
         document.getElementById('filter-keywords-input').value = savedKeywords;
     }
 }
 
-// Ya no es necesario, usamos el checkbox de DaisyUI
-function toggleConfig() { }
-
 function showConfigMessage(message, type = 'success') {
     const container = document.getElementById('config-message-container');
     const alertType = type === 'success' ? 'alert-success' : 'alert-error';
-    
-    container.innerHTML = `
-        <div class="alert ${alertType} shadow-sm">
-            <span>${message}</span>
-        </div>
-    `;
-    setTimeout(() => {
-        container.innerHTML = '';
-    }, 3000);
+    container.innerHTML = `<div class="alert ${alertType} shadow-sm"><span>${message}</span></div>`;
+    setTimeout(() => {container.innerHTML = '';}, 3000);
 }
 
 function saveApiKey() {
@@ -79,6 +95,7 @@ function saveKeywords() {
 // =================================================================
 // 2. FILTRADO DE CONTENIDO
 // =================================================================
+// ... (Funciones getFilterKeywords, filterVideo sin cambios) ...
 
 function getFilterKeywords() {
     const keywordsString = localStorage.getItem(LS_KEYWORDS) || '';
@@ -103,15 +120,14 @@ function filterVideo(snippet) {
 // =================================================================
 // 3. GESTIÓN DEL HISTORIAL
 // =================================================================
+// ... (Funciones addToHistory, renderHistory sin cambios) ...
 
 function addToHistory(video) {
     let history = JSON.parse(localStorage.getItem(LS_HISTORY) || '[]');
     const videoId = video.id.videoId;
-    
     history = history.filter(v => v.id.videoId !== videoId);
     history.unshift(video);
     history = history.slice(0, MAX_HISTORY_ITEMS); 
-    
     localStorage.setItem(LS_HISTORY, JSON.stringify(history));
     renderHistory();
 }
@@ -154,7 +170,10 @@ function createVideoElement(video, type = 'result') {
     
     const videoId = video.id.videoId;
     const videoTitle = video.snippet.title;
-    const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&rel=0&enablejsapi=1&modestbranding=1`;
+    
+    // CORRECCIÓN: Simplificamos la URL para evitar el Error 153.
+    // Quitamos &enablejsapi=1 y &rel=0 que son fuente de problemas.
+    const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&modestbranding=1`;
     
     videoElement.innerHTML = `
         <div class="video-player-wrapper">
@@ -193,11 +212,7 @@ function showResultMessage(message, type = 'info') {
     if (type === 'error') alertType = 'alert-error';
     if (type === 'warning') alertType = 'alert-warning';
 
-    resultsDiv.innerHTML = `
-        <div class="alert ${alertType} shadow-sm">
-            <span>${message}</span>
-        </div>
-    `;
+    resultsDiv.innerHTML = `<div class="alert ${alertType} shadow-sm"><span>${message}</span></div>`;
 }
 
 async function searchVideos() {
@@ -284,38 +299,29 @@ function renderSearchResults(videos) {
 // =================================================================
 // 5. GESTIÓN DEL TEMA (MODO OSCURO)
 // =================================================================
+// ... (Función setupTheme sin cambios) ...
 
 function setupTheme() {
     const themeToggle = document.getElementById('theme-toggle');
-    const htmlElement = document.documentElement; // El <html> tag
+    const htmlElement = document.documentElement; 
 
-    // 1. Cargar el tema guardado al iniciar
     const savedTheme = localStorage.getItem(LS_THEME);
     
     if (savedTheme) {
         htmlElement.setAttribute('data-theme', savedTheme);
-        if (savedTheme === 'night') {
-            themeToggle.checked = true;
-        } else {
-            themeToggle.checked = false;
-        }
+        themeToggle.checked = (savedTheme === 'night');
     } else {
-        // Por defecto usamos 'cupcake' (claro)
         htmlElement.setAttribute('data-theme', 'cupcake');
         themeToggle.checked = false;
     }
 
-    // 2. Escuchar cambios en el toggle
     themeToggle.addEventListener('change', (e) => {
         if (e.target.checked) {
-            // Es modo oscuro
             htmlElement.setAttribute('data-theme', 'night');
             localStorage.setItem(LS_THEME, 'night');
         } else {
-            // Es modo claro
             htmlElement.setAttribute('data-theme', 'cupcake');
             localStorage.setItem(LS_THEME, 'cupcake');
         }
     });
-        }
-            
+}
