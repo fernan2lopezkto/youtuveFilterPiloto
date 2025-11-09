@@ -40,8 +40,8 @@
 
 /* Ajustes para móviles */
 @media (max-width: 600px) {
-    .container {
-        margin: 0;
-        padding: 8px;
+    /* El padding-bottom es necesario para que el contenido no quede oculto bajo el btm-nav */
+    body {
+        padding-bottom: 5rem; 
     }
 }
