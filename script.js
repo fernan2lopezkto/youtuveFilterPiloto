@@ -35,8 +35,8 @@ function scrollToSection(id) {
     element = document.getElementById(id);
 
     if (element) {
-        // Obtenemos la posición del elemento. Restamos para compensar el navbar fijo.
-        const headerOffset = 64; // Altura aproximada del navbar fijo en escritorio (lg:pt-16)
+        // Obtenemos la posición del elemento. Restamos para compensar el navbar fijo en escritorio.
+        const headerOffset = 64; 
         const elementPosition = element.getBoundingClientRect().top;
         const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
 
@@ -51,7 +51,6 @@ function scrollToSection(id) {
 // =================================================================
 // 1. GESTIÓN DE LA API KEY Y CONFIGURACIÓN
 // =================================================================
-// ... (Funciones loadConfig, showConfigMessage, saveApiKey, saveKeywords sin cambios) ...
 
 function loadConfig() {
     const savedApiKey = localStorage.getItem(LS_API_KEY);
@@ -95,7 +94,6 @@ function saveKeywords() {
 // =================================================================
 // 2. FILTRADO DE CONTENIDO
 // =================================================================
-// ... (Funciones getFilterKeywords, filterVideo sin cambios) ...
 
 function getFilterKeywords() {
     const keywordsString = localStorage.getItem(LS_KEYWORDS) || '';
@@ -120,7 +118,6 @@ function filterVideo(snippet) {
 // =================================================================
 // 3. GESTIÓN DEL HISTORIAL
 // =================================================================
-// ... (Funciones addToHistory, renderHistory sin cambios) ...
 
 function addToHistory(video) {
     let history = JSON.parse(localStorage.getItem(LS_HISTORY) || '[]');
@@ -171,8 +168,7 @@ function createVideoElement(video, type = 'result') {
     const videoId = video.id.videoId;
     const videoTitle = video.snippet.title;
     
-    // CORRECCIÓN: Simplificamos la URL para evitar el Error 153.
-    // Quitamos &enablejsapi=1 y &rel=0 que son fuente de problemas.
+    // URL simplificada para evitar errores de incrustación
     const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&modestbranding=1`;
     
     videoElement.innerHTML = `
@@ -299,7 +295,6 @@ function renderSearchResults(videos) {
 // =================================================================
 // 5. GESTIÓN DEL TEMA (MODO OSCURO)
 // =================================================================
-// ... (Función setupTheme sin cambios) ...
 
 function setupTheme() {
     const themeToggle = document.getElementById('theme-toggle');
