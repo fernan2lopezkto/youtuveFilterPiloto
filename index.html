@@ -11,8 +11,7 @@
 
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-base-200 min-h-screen pb-20 lg:pb-0 lg:pt-16">
-    <!-- Nav Web -->
+<body class="bg-base-200 min-h-screen pb-20 lg:pb-0">
     <nav class="fixed top-0 left-0 right-0 z-40 bg-base-100 shadow-md p-2 hidden lg:block">
         <div class="container mx-auto sm:max-w-xl lg:max-w-4xl xl:max-w-6xl flex justify-center space-x-8">
             <button onclick="hideSections('top')" class="btn btn-ghost btn-sm" aria-label="Ir a Inicio">Inicio</button>
@@ -21,9 +20,12 @@
             <button onclick="hideSections('config-container')" class="btn btn-ghost btn-sm" aria-label="Ir a Configuración">Configuración</button>
         </div>
     </nav>
-    <div class="container mx-auto p-4 sm:max-w-xl lg:max-w-4xl xl:max-w-6xl">
 
-        <!-- Name and Toogle Theme Script -->
+    <div id="fixed-player-container" class="fixed-player-hidden z-30 lg:top-14">
+        </div>
+
+    <div class="container mx-auto p-4 sm:max-w-xl lg:max-w-4xl xl:max-w-6xl lg:pt-[100px]">
+
         <div id="toogle" class="flex justify-between items-center mt-4 mr-2 mb-4 lg:mt-0">
             <h1 class="text-3xl font-bold text-primary">Buscador y Filtro</h1>
 
@@ -33,7 +35,6 @@
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
             </label>
         </div>
-        <!-- Configuración -->
         <div id="config-container" class="collapse bg-base-100 shadow-md mb-4">
             <input type="checkbox" id="config-toggle-cb" /> 
             <label class="collapse-title font-medium" for="config-toggle-cb" id="toggle-config-btn">
@@ -104,12 +105,10 @@
         </div>
 
         <hr class="my-4 border-base-300">
-        <!-- Serh -->
         <div id="search-bar" class="join w-full mb-6">
             <input type="text" id="query" placeholder="Escribe tu búsqueda (ej: videos infantiles)" class="input input-bordered join-item w-full" aria-label="Término de búsqueda de YouTube">
             <button onclick="searchVideos()" class="btn btn-primary join-item" aria-label="Botón de buscar videos">Buscar</button>
         </div>
-        <!-- History -->
         <div id="history-section" class="mb-6">
             <h2 class="text-xl font-semibold mb-2">🕒 Vistos Recientemente</h2>
             <div id="viewed-history" class="video-list space-y-4">
@@ -117,14 +116,12 @@
         </div>
 
         <hr class="my-4 border-base-300">
-        <!-- Results -->
         <div id="results">
             <div class="alert alert-info">
                 <span>Resultados de la búsqueda aparecerán aquí.</span>
             </div>
         </div>
     </div>
-    <!-- FOOTER -->
     <footer class="footer p-10 bg-base-300 text-base-content mt-12">
         <div class="w-full text-center">
             <img src="avatarJuanRey.jpg" 
@@ -152,24 +149,23 @@
             </div>
         </div>
     </footer>
-    <!-- Nav Buttons for Mobile -->
     <div class="btm-nav lg:hidden z-50 bg-base-100 shadow-xl rounded-t-2xl">
-        <button onclick="hideSections('top')" aria-label="Ir a Inicio" class="btn-ghost p-3">
+        <button onclick="hideSections('top')" data-target="top" aria-label="Ir a Inicio" class="p-3 active">
             <i data-lucide="home" class="w-6 h-6"></i>
         </button>
 
-        <button onclick="hideSections('search-bar')" aria-label="Ir a Búsqueda" class="active p-3">
+        <button onclick="hideSections('search-bar')" data-target="search-bar" aria-label="Ir a Búsqueda" class="p-3">
             <i data-lucide="search" class="w-6 h-6"></i>
         </button>
 
-        <button onclick="hideSections('history-section')" aria-label="Ir a Historial" class="p-3">
+        <button onclick="hideSections('history-section')" data-target="history-section" aria-label="Ir a Historial" class="p-3">
             <i data-lucide="history" class="w-6 h-6"></i>
         </button>
 
-        <button onclick="hideSections('config-container')" aria-label="Ir a Configuración" class="p-3">
+        <button onclick="hideSections('config-container')" data-target="config-container" aria-label="Ir a Configuración" class="p-3">
             <i data-lucide="settings" class="w-6 h-6"></i>
         </button>
     </div>
     <script src="script.js" defer></script>
 </body>
-    </html>
+</html>

@@ -9,6 +9,12 @@ const MAX_HISTORY_ITEMS = 100;
 let API_KEY = '';
 const BASE_URL = 'https://www.googleapis.com/youtube/v3/search';
 
+// Elementos del contenedor fijo
+const fixedPlayerContainer = document.getElementById('fixed-player-container');
+const body = document.body;
+// Referencia a los botones de navegación inferior
+const btmNavButtons = document.querySelectorAll('.btm-nav button');
+
 // =================================================================
 // 0. INICIALIZACIÓN Y CONFIGURACIÓN
 // =================================================================
@@ -22,15 +28,46 @@ document.addEventListener('DOMContentLoaded', () => {
     lucide.createIcons();
 });
 
+// Función para actualizar la barra inferior (subrayado/activo)
+function updateBtmNav(activeId) {
+    btmNavButtons.forEach(button => {
+        // Remueve la clase 'active' de todos
+        button.classList.remove('active');
+        // Si el data-target coincide con el ID, lo activa
+        if (button.getAttribute('data-target') === activeId) {
+            button.classList.add('active');
+        }
+    });
+}
 
 // Función para navegar entre secciones (usada por el btm-nav)
 function hideSections(id) {
+
+    // LÓGICA DE VISIBILIDAD DE PESTAÑA ACTIVA
+    updateBtmNav(id);
+
+    // LÓGICA DE OCULTAR REPRODUCTOR FIJO (MANTENIENDO EL AUDIO)
+    const isPlayerActive = fixedPlayerContainer.classList.contains('fixed-player-active');
+
+    // 🆕 SI NO ES LA PESTAÑA DE BÚSQUEDA: OCULTAMOS
+    if (id !== 'search-bar') {
+        // Solo agregamos la clase de OCULTAR (transform: translateY(-100%))
+        fixedPlayerContainer.classList.add('fixed-player-hidden');
+        // Quitamos el padding del body
+        body.classList.remove('body-push-down'); 
+    } else {
+        // 🆕 SI ES LA PESTAÑA DE BÚSQUEDA: MOSTRAMOS si está ACTIVO
+        if (isPlayerActive) {
+            fixedPlayerContainer.classList.remove('fixed-player-hidden');
+            body.classList.add('body-push-down');
+        }
+    }
 
     switch (id) {
         case 'top':
             document.getElementById('toogle').style.display = 'flex';
             document.getElementById('search-bar').style.display = 'flex';
-            document.getElementById('results').style.display = 'none';
+            document.getElementById('results').style.display = 'none'; 
             document.getElementById('history-section').style.display = 'block';
             document.getElementById('config-container').style.display = 'none';
             console.log('Navegando a Inicio');
@@ -61,34 +98,22 @@ function hideSections(id) {
             console.log('Navegando a Historial');
             break;
         default:
+            // Comportamiento por defecto (Al cargar)
             document.getElementById('toogle').style.display = 'flex';
             document.getElementById('search-bar').style.display = 'flex';
             document.getElementById('results').style.display = 'flex';
             document.getElementById('history-section').style.display = 'block';
             document.getElementById('config-container').style.display = 'none';
+
+            // Aseguramos ocultamiento y limpieza al inicio
+            fixedPlayerContainer.classList.add('fixed-player-hidden');
+            body.classList.remove('body-push-down');
+            fixedPlayerContainer.classList.remove('fixed-player-active'); 
+            fixedPlayerContainer.innerHTML = ''; 
+            updateBtmNav('top');
             console.log(id);
             break;
     };
-    // let element;
-
-    // if (id === 'top') {
-    //     window.scrollTo({ top: 0, behavior: 'smooth' });
-    //     return;
-    // }
-
-    // element = document.getElementById(id);
-
-    // if (element) {
-    //     // Obtenemos la posición del elemento. Restamos para compensar el navbar fijo en escritorio.
-    //     const headerOffset = 64; 
-    //     const elementPosition = element.getBoundingClientRect().top;
-    //     const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-
-    //     window.scrollTo({
-    //         top: offsetPosition,
-    //         behavior: 'smooth'
-    //     });
-    // }
 }
 
 
@@ -200,10 +225,49 @@ function renderHistory() {
     }
 }
 
+// =================================================================
+// 4. BÚSQUEDA Y RENDERIZADO (CON REPRODUCTOR FIJO)
+// =================================================================
 
-// =================================================================
-// 4. BÚSQUEDA Y RENDERIZADO (CON LA SOLUCIÓN DEL OVERLAY)
-// =================================================================
+function playVideoInFixedPlayer(video) {
+    const videoId = video.id.videoId;
+    const videoTitle = video.snippet.title;
+    const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&modestbranding=1`;
+
+    const existingIframe = fixedPlayerContainer.querySelector(`[data-video-id="${videoId}"]`);
+
+    // Solo inyectamos el HTML si es un video nuevo o el contenedor estaba vacío
+    if (!existingIframe) {
+        const newPlayerHTML = `
+            <div class="video-player-wrapper">
+                <iframe class="video-player"
+                    src="${embedUrl}"
+                    frameborder="0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowfullscreen 
+                    title="Reproductor Fijo: ${videoTitle}"
+                    data-video-id="${videoId}">
+                </iframe>
+            </div>
+        `;
+        fixedPlayerContainer.innerHTML = newPlayerHTML;
+    } else {
+        // Si el video ya está cargado, nos aseguramos de que el iframe no se haya recargado
+        // y solo le mandamos un postMessage si el API estuviera disponible (aunque no es necesario para autoplay)
+        // Por simplicidad en vanilla JS, nos conformamos con que el iframe persista.
+    }
+
+    // Marcamos el contenedor como activo y mostramos
+    fixedPlayerContainer.classList.remove('fixed-player-hidden');
+    fixedPlayerContainer.classList.add('fixed-player-active');
+
+    // Y aseguramos el padding para empujar el contenido
+    body.classList.add('body-push-down'); 
+    fixedPlayerContainer.classList.add('fixed-player-active'); // Aseguramos que está activo
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 
 function createVideoElement(video, type = 'result') {
     const videoElement = document.createElement('div');
@@ -212,20 +276,14 @@ function createVideoElement(video, type = 'result') {
     const videoId = video.id.videoId;
     const videoTitle = video.snippet.title;
 
-    // URL simplificada para evitar errores de incrustación
-    const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&modestbranding=1`;
-
     videoElement.innerHTML = `
         <div class="video-player-wrapper">
-            <iframe class="video-player"
-                src="${embedUrl}"
-                frameborder="0" 
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                allowfullscreen 
-                title="Reproductor: ${videoTitle}"
-                data-video-id="${videoId}">
-            </iframe>
-            <div class="video-overlay" aria-label="Reproducir video ${videoTitle}"></div>
+            <div class="video-overlay" aria-label="Reproducir video ${videoTitle}">
+                <i data-lucide="play-circle" class="w-12 h-12 text-white/90 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-80 hover:opacity-100 transition duration-200"></i>
+            </div>
+            <img src="https://img.youtube.com/vi/${videoId}/mqdefault.jpg" 
+                 alt="Miniatura de ${videoTitle}" 
+                 class="w-full h-full object-cover"/>
         </div>
         <div class="card-body">
             <h3 class="card-title text-base">${videoTitle}</h3>
@@ -234,14 +292,18 @@ function createVideoElement(video, type = 'result') {
         </div>
     `;
 
+    lucide.createIcons();
+
     const overlay = videoElement.querySelector('.video-overlay');
 
     overlay.addEventListener('click', () => {
         if (type === 'result') {
             addToHistory(video);
         }
-        overlay.style.display = 'none';
-    }, { once: true });
+        // Cuando hacemos clic, navegamos a la sección de búsqueda y reproducimos
+        hideSections('search-bar');
+        playVideoInFixedPlayer(video);
+    });
 
     return videoElement;
 }
@@ -256,7 +318,8 @@ function showResultMessage(message, type = 'info') {
 }
 
 async function searchVideos() {
-    hideSections('search-bar')
+    // Aseguramos que la navegación a búsqueda active la pestaña correcta
+    hideSections('search-bar'); 
     const resultsDiv = document.getElementById('results');
 
     if (!API_KEY) {
@@ -311,6 +374,8 @@ function renderSearchResults(videos) {
     let filteredCount = 0;
     let renderedCount = 0;
 
+    resultsDiv.classList.add('grid', 'grid-cols-1', 'sm:grid-cols-2', 'lg:grid-cols-3', 'gap-4'); 
+
     videos.forEach(video => {
         if (!video.id || !video.id.videoId) return;
 
@@ -329,7 +394,7 @@ function renderSearchResults(videos) {
         showResultMessage('No se encontraron videos que coincidieran con la búsqueda.', 'info');
     } else if (filteredCount > 0) {
         resultsDiv.insertAdjacentHTML('afterbegin', `
-            <div class="alert alert-success shadow-sm mb-4">
+            <div class="alert alert-success shadow-sm mb-4 col-span-full">
                 <span>ℹ️ Se han filtrado ${filteredCount} videos por tus palabras clave.</span>
             </div>
         `);
@@ -364,4 +429,4 @@ function setupTheme() {
             localStorage.setItem(LS_THEME, 'cupcake');
         }
     });
-        }
+}

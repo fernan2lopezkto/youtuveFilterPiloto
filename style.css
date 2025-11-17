@@ -1,7 +1,7 @@
 /* 1. El 'wrapper' (contenedor) debe tener posición relativa */
 .video-player-wrapper {
     position: relative;
-    /* Mantenemos el aspecto 16:9 para el video */
+    /* Mantenemos el aspecto 16:9 para el video. ESTO DA LA ALTURA */
     padding-top: 56.25%; /* 16:9 Aspect Ratio (divide 9 por 16) */
     height: 0;
     overflow: hidden;
@@ -10,7 +10,8 @@
 
 /* 2. El iframe y el overlay son absolutos DENTRO del wrapper */
 .video-player,
-.video-overlay {
+.video-overlay,
+.video-player-wrapper img { /* Incluimos la imagen del thumbnail */
     position: absolute;
     top: 0;
     left: 0;
@@ -23,8 +24,83 @@
 .video-overlay {
     z-index: 10;
     cursor: pointer;
-    /* transparente */
-    background-color: rgba(0,0,0,0); 
+    background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.4));
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 /* -------------------------------------- */
+/* Estilos del Reproductor Fijo Superior */
+/* -------------------------------------- */
+
+#fixed-player-container {
+    position: fixed;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: auto; 
+    padding-top: 0; 
+    overflow: hidden;
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+    background-color: var(--fallback-b1, oklch(var(--b1)));
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    top: 0; 
+}
+
+/* Clase para ocultarlo (movido fuera de la vista) */
+.fixed-player-hidden {
+    transform: translateY(-100%); 
+    box-shadow: none;
+}
+
+/* Clase cuando el reproductor está activo */
+.fixed-player-active {
+    transform: translateY(0);
+}
+
+/* En escritorio, el reproductor tiene la altura completa (16:9) */
+@media (min-width: 1024px) {
+    #fixed-player-container {
+        left: 50%;
+        transform: translateX(-50%);
+        max-width: calc(100% - 2rem); 
+        width: 100%;
+        height: auto;
+        padding-top: 0; 
+    }
+}
+
+/* -------------------------------------- */
+/* NUEVO: Clase para empujar el contenido cuando el reproductor fijo está activo */
+/* -------------------------------------- */
+
+@media (max-width: 1023px) { /* Solo para móviles */
+    .body-push-down {
+        padding-top: calc(56.25vw + 1rem); /* Altura del video + un margen */
+    }
+}
+
+/* -------------------------------------- */
+
+/* Clases de texto que ya no usamos (DaisyUI las maneja) */
+.id-text {
+    font-size: 12px;
+    color: #777;
+    opacity: 0.7;
+}
+
+/* Ajustes para móviles */
+@media (max-width: 1023px) {
+    /* El padding-bottom es necesario para que el contenido no quede oculto bajo el btm-nav */
+    body {
+        padding-bottom: 5rem; 
+    }
+}
+
+/* Para que los resultados se vean en forma de grid */
+.video-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+}
