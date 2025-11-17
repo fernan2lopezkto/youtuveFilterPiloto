@@ -3,7 +3,7 @@ const LS_API_KEY = 'youtube_api_key';
 const LS_KEYWORDS = 'filter_keywords';
 const LS_HISTORY = 'video_history';
 const LS_THEME = 'youtube_filter_theme'; 
-const MAX_HISTORY_ITEMS = 20; 
+const MAX_HISTORY_ITEMS = 100; 
 
 // Variables globales
 let API_KEY = '';
@@ -17,34 +17,78 @@ document.addEventListener('DOMContentLoaded', () => {
     loadConfig();
     renderHistory();
     setupTheme();
-    
+    hideSections("default");
     // Renderizar los iconos de Lucide
     lucide.createIcons();
 });
 
 
 // Función para navegar entre secciones (usada por el btm-nav)
-function scrollToSection(id) {
-    let element;
-    
-    if (id === 'top') {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        return;
-    }
+function hideSections(id) {
 
-    element = document.getElementById(id);
+    switch (id) {
+        case 'top':
+            document.getElementById('toogle').style.display = 'flex';
+            document.getElementById('search-bar').style.display = 'flex';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('history-section').style.display = 'block';
+            document.getElementById('config-container').style.display = 'none';
+            console.log('Navegando a Inicio');
+            break;
+        case 'search-bar':
+            document.getElementById('toogle').style.display = 'none';
+            document.getElementById('search-bar').style.display = 'flex';
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('history-section').style.display = 'none';
+            document.getElementById('config-container').style.display = 'none';
+            console.log('Navegando a Búsqueda');
+            break;
+        case 'config-container':
+            document.getElementById('config-toggle-cb').checked = true;
+            document.getElementById('toogle').style.display = 'none';
+            document.getElementById('search-bar').style.display = 'none';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('history-section').style.display = 'none';
+            document.getElementById('config-container').style.display = 'block';
+            console.log('Navegando a Configuración');
+            break;
+        case 'history-section':
+            document.getElementById('toogle').style.display = 'none';
+            document.getElementById('search-bar').style.display = 'none';
+            document.getElementById('results').style.display = 'none';
+            document.getElementById('history-section').style.display = 'block';
+            document.getElementById('config-container').style.display = 'none';
+            console.log('Navegando a Historial');
+            break;
+        default:
+            document.getElementById('toogle').style.display = 'flex';
+            document.getElementById('search-bar').style.display = 'flex';
+            document.getElementById('results').style.display = 'flex';
+            document.getElementById('history-section').style.display = 'block';
+            document.getElementById('config-container').style.display = 'none';
+            console.log(id);
+            break;
+    };
+    // let element;
 
-    if (element) {
-        // Obtenemos la posición del elemento. Restamos para compensar el navbar fijo en escritorio.
-        const headerOffset = 64; 
-        const elementPosition = element.getBoundingClientRect().top;
-        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+    // if (id === 'top') {
+    //     window.scrollTo({ top: 0, behavior: 'smooth' });
+    //     return;
+    // }
 
-        window.scrollTo({
-            top: offsetPosition,
-            behavior: 'smooth'
-        });
-    }
+    // element = document.getElementById(id);
+
+    // if (element) {
+    //     // Obtenemos la posición del elemento. Restamos para compensar el navbar fijo en escritorio.
+    //     const headerOffset = 64; 
+    //     const elementPosition = element.getBoundingClientRect().top;
+    //     const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+
+    //     window.scrollTo({
+    //         top: offsetPosition,
+    //         behavior: 'smooth'
+    //     });
+    // }
 }
 
 
@@ -103,7 +147,7 @@ function getFilterKeywords() {
 function filterVideo(snippet) {
     const keywords = getFilterKeywords();
     if (keywords.length === 0) return false; 
-    
+
     const title = (snippet.title || '').toLowerCase();
     const description = (snippet.description || '').toLowerCase();
 
@@ -164,13 +208,13 @@ function renderHistory() {
 function createVideoElement(video, type = 'result') {
     const videoElement = document.createElement('div');
     videoElement.className = `card card-compact bg-base-100 shadow-md ${type}`;
-    
+
     const videoId = video.id.videoId;
     const videoTitle = video.snippet.title;
-    
+
     // URL simplificada para evitar errores de incrustación
     const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=0&modestbranding=1`;
-    
+
     videoElement.innerHTML = `
         <div class="video-player-wrapper">
             <iframe class="video-player"
@@ -191,7 +235,7 @@ function createVideoElement(video, type = 'result') {
     `;
 
     const overlay = videoElement.querySelector('.video-overlay');
-    
+
     overlay.addEventListener('click', () => {
         if (type === 'result') {
             addToHistory(video);
@@ -212,14 +256,15 @@ function showResultMessage(message, type = 'info') {
 }
 
 async function searchVideos() {
+    hideSections('search-bar')
     const resultsDiv = document.getElementById('results');
-    
+
     if (!API_KEY) {
         showResultMessage('❌ La Clave de API no está configurada. Por favor, guárdala en Configuración.', 'error');
         document.getElementById('config-toggle-cb').checked = true;
         return;
     }
-    
+
     const query = document.getElementById('query').value;
     if (!query) {
         showResultMessage('Por favor, escribe una consulta.', 'warning');
@@ -233,7 +278,7 @@ async function searchVideos() {
         q: query,
         key: API_KEY,
         type: 'video', 
-        maxResults: 20,
+        maxResults: 30,
         videoEmbeddable: 'true' 
     });
 
@@ -273,11 +318,11 @@ function renderSearchResults(videos) {
             filteredCount++;
             return; 
         }
-        
+
         resultsDiv.appendChild(createVideoElement(video, 'result'));
         renderedCount++;
     });
-    
+
     if (renderedCount === 0 && filteredCount > 0) {
         showResultMessage(`Se filtraron ${filteredCount} videos de los resultados. Intenta otra búsqueda.`, 'warning');
     } else if (renderedCount === 0 && filteredCount === 0) {
@@ -301,7 +346,7 @@ function setupTheme() {
     const htmlElement = document.documentElement; 
 
     const savedTheme = localStorage.getItem(LS_THEME);
-    
+
     if (savedTheme) {
         htmlElement.setAttribute('data-theme', savedTheme);
         themeToggle.checked = (savedTheme === 'night');
@@ -319,4 +364,4 @@ function setupTheme() {
             localStorage.setItem(LS_THEME, 'cupcake');
         }
     });
-}
+        }
