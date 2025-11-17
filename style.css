@@ -1,5 +1,3 @@
-/* --- Arreglo para el clic en móviles --- */
-
 /* 1. El 'wrapper' (contenedor) debe tener posición relativa */
 .video-player-wrapper {
     position: relative;
@@ -30,18 +28,3 @@
 }
 
 /* -------------------------------------- */
-
-/* Clases de texto que ya no usamos (DaisyUI las maneja) */
-.id-text {
-    font-size: 12px;
-    color: #777;
-    opacity: 0.7;
-}
-
-/* Ajustes para móviles */
-@media (max-width: 600px) {
-    /* El padding-bottom es necesario para que el contenido no quede oculto bajo el btm-nav */
-    body {
-        padding-bottom: 5rem; 
-    }
-}
