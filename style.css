@@ -7,19 +7,59 @@ body {
     -webkit-overflow-scrolling: touch; 
 }
 
-/* Estilos del Video */
+/* --- ESTILOS DEL REPRODUCTOR (OPTIMIZADO) --- */
+
+/* El contenedor fijo principal */
+#fixed-player-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    z-index: 100; /* Alto Z-Index para estar sobre todo */
+    background-color: #000; /* Fondo NEGRO para evitar transparencias */
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+/* El envoltorio interno del video (16:9) */
 .video-player-wrapper {
     position: relative;
     width: 100%;
-    padding-top: 56.25%; /* 16:9 */
+    padding-top: 56.25%; /* 16:9 Aspect Ratio */
     background-color: #000;
     overflow: hidden;
-    border-radius: 0.75rem;
+    border-radius: 0; /* Cuadrado en móvil para full width */
 }
 
+/* En pantallas grandes, lo hacemos flotante y redondeado */
+@media (min-width: 1024px) {
+    #fixed-player-container {
+        width: 80%;
+        left: 10%;
+        top: 1rem;
+        overflow: visible; /* Para la sombra */
+    }
+    .video-player-wrapper {
+        border-radius: 1rem;
+    }
+}
+
+/* Clases para mostrar/ocultar el reproductor con animación */
+.fixed-player-hidden {
+    transform: translateY(-100%); /* Se esconde hacia ARRIBA */
+    pointer-events: none;
+}
+
+.fixed-player-active {
+    transform: translateY(0); /* Baja a su posición */
+}
+
+/* Elementos dentro del wrapper */
 .video-player,
 .video-overlay,
-.video-player-wrapper img {
+.video-player-wrapper img,
+#yt-player {
     position: absolute;
     top: 0;
     left: 0;
@@ -29,6 +69,7 @@ body {
     object-fit: cover;
 }
 
+/* --- ESTILOS DE LA TARJETA (Overlay) --- */
 .video-overlay {
     z-index: 10;
     cursor: pointer;
@@ -43,38 +84,9 @@ body {
     background-color: rgba(0,0,0,0.3);
 }
 
-/* Reproductor Fijo Superior */
-#fixed-player-container {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    width: 100%;
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-}
-
-@media (min-width: 1024px) {
-    #fixed-player-container {
-        width: 80%;
-        left: 10%;
-        top: 1rem;
-        border-radius: 1rem;
-        overflow: hidden;
-    }
-}
-
-.fixed-player-hidden {
-    transform: translateY(-150%);
-    pointer-events: none;
-}
-
-.fixed-player-active {
-    transform: translateY(0);
-}
-
-/* Empuje del contenido */
+/* --- EMPUJE DEL CONTENIDO (Padding Top dinámico) --- */
 .body-push-down {
+    /* Altura del video (56.25vw) + un poco de margen */
     padding-top: calc(56.25vw + 1rem);
 }
 
@@ -84,7 +96,7 @@ body {
     }
 }
 
-/* Animación */
+/* --- ANIMACIONES Y EXTRAS --- */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
@@ -94,7 +106,6 @@ body {
     animation: fadeIn 0.4s ease-out forwards;
 }
 
-/* Footer Avatar */
 .footer-avatar {
     object-fit: cover;
     transition: transform 0.3s ease;

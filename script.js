@@ -3,18 +3,23 @@ const LS_API_KEY = 'youtube_api_key';
 const LS_KEYWORDS = 'filter_keywords';
 const LS_HISTORY = 'video_history';
 const LS_THEME = 'youtube_filter_theme'; 
-const MAX_HISTORY_ITEMS = 100; // Subido a 100
-const HISTORY_BATCH_SIZE = 15; // Carga de a 15 en el historial
+const MAX_HISTORY_ITEMS = 100;
+const HISTORY_BATCH_SIZE = 15; 
 const BASE_URL = 'https://www.googleapis.com/youtube/v3/search';
 
 // ESTADO GLOBAL
 let API_KEY = '';
-let activeView = 'home'; // 'home' (historial) | 'search'
-let nextPageToken = ''; // Para API de YouTube
-let historyOffset = 0;  // Para paginación del historial local
+let activeView = 'home'; 
+let nextPageToken = ''; 
+let historyOffset = 0;
 let isFetching = false;
 let currentQuery = '';
 let observer;
+
+// ESTADO DEL PLAYER
+let player; 
+let isPlayerReady = false;
+let currentPlayerTitle = ''; 
 
 // ELEMENTOS DOM
 const fixedPlayerContainer = document.getElementById('fixed-player-container');
@@ -31,31 +36,41 @@ document.addEventListener('DOMContentLoaded', () => {
     loadConfig();
     setupTheme();
     setupScrollObserver();
-    switchView('home'); // Arrancamos en HOME (Historial)
+    switchView('home'); 
     lucide.createIcons();
+    loadYouTubeIframeAPI();
 });
 
+function loadYouTubeIframeAPI() {
+    const tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    const firstScriptTag = document.getElementsByTagName('script')[0];
+    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+}
+
+window.onYouTubeIframeAPIReady = function() {
+    isPlayerReady = true;
+    console.log("📺 YouTube Player API lista para la TV");
+};
+
 // =================================================================
-// 1. GESTIÓN DE VISTAS (ROUTER SIMPLIFICADO)
+// 1. GESTIÓN DE VISTAS
 // =================================================================
 
 function switchView(viewName) {
     activeView = viewName;
     updateBtmNav(viewName);
-
-    // Elementos UI
+    
     const searchBar = document.getElementById('search-bar-container');
     const configContainer = document.getElementById('config-container');
     const headerMobile = document.getElementById('header-mobile');
     const sectionTitle = document.getElementById('section-title');
     const footer = document.getElementById('main-footer');
-
-    // Resetear scroll y estados
+    
     scrollSentinel.style.display = 'block';
-
+    
     if (viewName === 'config') {
         configContainer.classList.remove('hidden');
-        // Abrir el collapse si entra a config
         document.getElementById('config-toggle-cb').checked = true;
         searchBar.classList.add('hidden');
         resultsDiv.classList.add('hidden');
@@ -64,43 +79,36 @@ function switchView(viewName) {
         footer.classList.remove('hidden');
         scrollSentinel.style.display = 'none';
     } else {
-        // Cerrar config
         document.getElementById('config-toggle-cb').checked = false;
         resultsDiv.classList.remove('hidden');
         sectionTitle.classList.remove('hidden');
-        footer.classList.remove('hidden'); // Footer visible en home y search
-
+        footer.classList.remove('hidden');
+        
         if (viewName === 'search') {
             searchBar.classList.remove('hidden');
-            headerMobile.classList.add('hidden'); // Ocultar header en búsqueda para más espacio
+            headerMobile.classList.add('hidden'); 
             sectionTitle.innerHTML = `<i data-lucide="search" class="w-5 h-5"></i> Resultados`;
-
-            // Si no hay búsqueda previa, limpiar
+            
             if (!currentQuery) {
                 resultsDiv.innerHTML = '<div class="col-span-full text-center opacity-50 py-10">Escribe arriba para buscar videos nuevos.</div>';
                 scrollSentinel.style.display = 'none';
             } else if (resultsDiv.childElementCount === 0) {
-                 // Restaurar búsqueda si volvimos
                  searchVideos(false); 
             }
-
+            
         } else if (viewName === 'home') {
             searchBar.classList.add('hidden');
             headerMobile.classList.remove('hidden');
             sectionTitle.innerHTML = `<i data-lucide="clock" class="w-5 h-5"></i> Tu Historial`;
-
-            // Cargar Historial (Reset)
             loadHistoryBatch(true);
         }
     }
-
-    // Manejo del reproductor fijo
-    if (viewName === 'config') {
-        // Opcional: Ocultar reproductor en config
-    } else if (fixedPlayerContainer.classList.contains('fixed-player-active')) {
+    
+    // Si hay reproductor, ajustar padding
+    if (viewName !== 'config' && fixedPlayerContainer.classList.contains('fixed-player-active')) {
         body.classList.add('body-push-down');
     }
-
+    
     lucide.createIcons();
 }
 
@@ -116,15 +124,11 @@ function updateBtmNav(activeId) {
 }
 
 // =================================================================
-// 2. SCROLL INFINITO UNIFICADO
+// 2. SCROLL INFINITO
 // =================================================================
 
 function setupScrollObserver() {
-    const options = {
-        root: null, 
-        rootMargin: '150px',
-        threshold: 0.1
-    };
+    const options = { root: null, rootMargin: '150px', threshold: 0.1 };
 
     observer = new IntersectionObserver((entries) => {
         if (entries[0].isIntersecting && !isFetching) {
@@ -140,7 +144,7 @@ function setupScrollObserver() {
 }
 
 // =================================================================
-// 3. LÓGICA: HISTORIAL CON PAGINACIÓN
+// 3. HISTORIAL
 // =================================================================
 
 function loadHistoryBatch(isReset = false) {
@@ -151,8 +155,7 @@ function loadHistoryBatch(isReset = false) {
     }
 
     const fullHistory = JSON.parse(localStorage.getItem(LS_HISTORY) || '[]');
-
-    // Si no hay nada en absoluto
+    
     if (fullHistory.length === 0) {
         resultsDiv.innerHTML = `
             <div class="col-span-full text-center py-10 opacity-60 flex flex-col items-center">
@@ -166,42 +169,28 @@ function loadHistoryBatch(isReset = false) {
         return;
     }
 
-    // Calcular el lote
     const batch = fullHistory.slice(historyOffset, historyOffset + HISTORY_BATCH_SIZE);
-
+    
     if (batch.length > 0) {
         renderVideosEfficiently(batch);
         historyOffset += HISTORY_BATCH_SIZE;
     }
 
-    // Si ya mostramos todo, ocultar centinela
     if (historyOffset >= fullHistory.length) {
         scrollSentinel.style.display = 'none';
-        if(resultsDiv.children.length > 0) {
-             resultsDiv.insertAdjacentHTML('beforeend', 
-                '<div class="col-span-full text-center text-xs opacity-40 py-4">Fin del historial</div>'
-             );
-        }
     }
 }
 
 function addToHistory(video) {
     let history = JSON.parse(localStorage.getItem(LS_HISTORY) || '[]');
-    // Evitar duplicados por ID
     history = history.filter(v => v.id.videoId !== video.id.videoId);
-
     history.unshift(video);
-
-    // Limitar a 100 items
-    if (history.length > MAX_HISTORY_ITEMS) {
-        history = history.slice(0, MAX_HISTORY_ITEMS);
-    }
-
+    if (history.length > MAX_HISTORY_ITEMS) history = history.slice(0, MAX_HISTORY_ITEMS);
     localStorage.setItem(LS_HISTORY, JSON.stringify(history));
 }
 
 // =================================================================
-// 4. LÓGICA: BÚSQUEDA (API)
+// 4. BÚSQUEDA (API)
 // =================================================================
 
 async function searchVideos(isNewSearch = true) {
@@ -210,14 +199,12 @@ async function searchVideos(isNewSearch = true) {
         switchView('config');
         return;
     }
-
     if (isFetching) return;
 
     if (isNewSearch) {
         const input = document.getElementById('query');
         currentQuery = input ? input.value.trim() : '';
         if (!currentQuery) return;
-
         nextPageToken = '';
         resultsDiv.innerHTML = '';
         scrollSentinel.style.display = 'block';
@@ -246,15 +233,11 @@ async function searchVideos(isNewSearch = true) {
             showToast(`Error API: ${data.error.message}`, 'error');
             return;
         }
-
         nextPageToken = data.nextPageToken || '';
-
         if (data.items) {
-            // Filtrar antes de renderizar
             const safeVideos = data.items.filter(v => !filterVideo(v.snippet));
             renderVideosEfficiently(safeVideos);
         }
-
     } catch (error) {
         showToast('Error de conexión', 'error');
         console.error(error);
@@ -266,21 +249,142 @@ async function searchVideos(isNewSearch = true) {
 }
 
 // =================================================================
-// 5. RENDERIZADO Y REPRODUCTOR
+// 5. REPRODUCTOR & AUTOPLAY (MEJORADO)
+// =================================================================
+
+function playVideo(videoId, title, videoObj = null) {
+    // Guardamos referencia
+    currentPlayerTitle = title;
+    if (videoObj) addToHistory(videoObj);
+
+    // Preparamos HTML
+    fixedPlayerContainer.innerHTML = `
+        <div class="video-player-wrapper">
+            <div id="yt-player"></div>
+            <button id="close-player-btn" class="absolute top-2 right-2 btn btn-circle btn-xs btn-error z-20 text-white opacity-70 hover:opacity-100">✕</button>
+        </div>
+    `;
+    
+    document.getElementById('close-player-btn').addEventListener('click', closePlayer);
+    
+    // Mostrar con CSS
+    fixedPlayerContainer.classList.remove('fixed-player-hidden');
+    fixedPlayerContainer.classList.add('fixed-player-active');
+    body.classList.add('body-push-down');
+    
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Inicializar YouTube Player
+    if (isPlayerReady) {
+        if (player && typeof player.destroy === 'function') {
+            try { player.destroy(); } catch(e) {}
+        }
+
+        player = new YT.Player('yt-player', {
+            height: '100%',
+            width: '100%',
+            videoId: videoId,
+            playerVars: {
+                'autoplay': 1,
+                'playsinline': 1, // Clave para móviles
+                'rel': 0,
+                'modestbranding': 1,
+                'controls': 1
+            },
+            events: {
+                'onStateChange': onPlayerStateChange,
+                'onError': onPlayerError
+            }
+        });
+    } else {
+        // Fallback Iframe Simple
+        fixedPlayerContainer.innerHTML = `<div class="video-player-wrapper"><iframe class="video-player" src="https://www.youtube.com/embed/${videoId}?autoplay=1" allowfullscreen></iframe></div>`;
+    }
+}
+
+function onPlayerError(event) {
+    console.error("Error Player:", event.data);
+    showToast("Video no disponible, saltando...", "warning");
+    if(player) fetchAndPlayRelated(player.getVideoData().video_id, currentPlayerTitle);
+}
+
+function onPlayerStateChange(event) {
+    // 0 = ENDED
+    if (event.data === 0) {
+        console.log("🎬 Terminado. Buscando siguiente...");
+        const currentId = player.getVideoData().video_id;
+        fetchAndPlayRelated(currentId, currentPlayerTitle);
+    }
+}
+
+async function fetchAndPlayRelated(currentVideoId, queryTitle) {
+    if (!API_KEY) return;
+    showToast('⏳ Buscando siguiente...', 'info');
+
+    // Buscamos por Título (más seguro que relatedToVideoId)
+    const cleanQuery = queryTitle.replace(/["']/g, ""); 
+
+    const params = new URLSearchParams({
+        part: 'snippet',
+        q: cleanQuery, 
+        type: 'video',
+        key: API_KEY,
+        maxResults: 10,
+        safeSearch: 'strict',
+        videoEmbeddable: 'true'
+    });
+
+    try {
+        const response = await fetch(`${BASE_URL}?${params.toString()}`);
+        const data = await response.json();
+
+        if (data.items && data.items.length > 0) {
+            // Filtramos ID actual y palabras prohibidas
+            const nextSafeVideo = data.items.find(video => 
+                video.id.videoId !== currentVideoId && 
+                !filterVideo(video.snippet)
+            );
+
+            if (nextSafeVideo) {
+                console.log(`▶️ Siguiente: ${nextSafeVideo.snippet.title}`);
+                currentPlayerTitle = nextSafeVideo.snippet.title;
+                addToHistory(nextSafeVideo);
+                // Carga fluida
+                player.loadVideoById(nextSafeVideo.id.videoId);
+            } else {
+                showToast('Fin de reproducción automática', 'warning');
+            }
+        }
+    } catch (error) {
+        console.error("Error AutoPlay:", error);
+    }
+}
+
+function closePlayer() {
+    fixedPlayerContainer.classList.add('fixed-player-hidden');
+    fixedPlayerContainer.classList.remove('fixed-player-active');
+    
+    if(player && typeof player.destroy === 'function') {
+        player.destroy();
+        player = null;
+    } else {
+        fixedPlayerContainer.innerHTML = '';
+    }
+    body.classList.remove('body-push-down');
+}
+
+// =================================================================
+// 6. UTILIDADES
 // =================================================================
 
 function renderVideosEfficiently(videos) {
     const fragment = document.createDocumentFragment();
-
     videos.forEach(video => {
         if (!video.id.videoId) return;
-        // Doble chequeo de filtro por las dudas
         if (filterVideo(video.snippet)) return;
-
         const card = createVideoCard(video);
         fragment.appendChild(card);
     });
-
     resultsDiv.appendChild(fragment);
     lucide.createIcons();
 }
@@ -288,9 +392,8 @@ function renderVideosEfficiently(videos) {
 function createVideoCard(video) {
     const div = document.createElement('div');
     div.className = 'card card-compact bg-base-100 shadow-sm video-item-anim hover:shadow-md transition-shadow duration-200';
-
     const titleSafe = video.snippet.title.replace(/"/g, '&quot;');
-
+    
     div.innerHTML = `
         <div class="video-player-wrapper cursor-pointer group">
             <img src="${video.snippet.thumbnails.medium?.url || video.snippet.thumbnails.default.url}" 
@@ -308,46 +411,13 @@ function createVideoCard(video) {
             </p>
         </div>
     `;
-
+    
     div.querySelector('.video-player-wrapper').addEventListener('click', () => {
-        addToHistory(video); // Guarda en historial
-        playVideo(video.id.videoId, titleSafe);
+        playVideo(video.id.videoId, titleSafe, video);
     });
-
+    
     return div;
 }
-
-function playVideo(videoId, title) {
-    const embedUrl = `https://www.youtube.com/embed/${videoId}?autoplay=1&modestbranding=1&rel=0&playsinline=1`;
-
-    fixedPlayerContainer.innerHTML = `
-        <div class="video-player-wrapper">
-            <iframe class="video-player" src="${embedUrl}" 
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                    allowfullscreen title="${title}"></iframe>
-            <button id="close-player-btn" class="absolute top-2 right-2 btn btn-circle btn-xs btn-error z-20 text-white opacity-70 hover:opacity-100">✕</button>
-        </div>
-    `;
-
-    document.getElementById('close-player-btn').addEventListener('click', closePlayer);
-
-    fixedPlayerContainer.classList.remove('fixed-player-hidden');
-    fixedPlayerContainer.classList.add('fixed-player-active');
-    body.classList.add('body-push-down');
-
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-function closePlayer() {
-    fixedPlayerContainer.classList.add('fixed-player-hidden');
-    fixedPlayerContainer.classList.remove('fixed-player-active');
-    setTimeout(() => { fixedPlayerContainer.innerHTML = ''; }, 300);
-    body.classList.remove('body-push-down');
-}
-
-// =================================================================
-// 6. UTILIDADES
-// =================================================================
 
 function loadConfig() {
     API_KEY = localStorage.getItem(LS_API_KEY) || '';
@@ -366,7 +436,6 @@ function saveApiKey() {
         localStorage.setItem(LS_API_KEY, val);
         API_KEY = val;
         showToast('API Key Guardada', 'success');
-        // Si estamos en home, recargar historial por si acaso
         if (activeView === 'home') loadHistoryBatch(true);
     }
 }
