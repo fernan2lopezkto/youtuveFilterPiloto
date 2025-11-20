@@ -16,10 +16,12 @@ let isFetching = false;
 let currentQuery = '';
 let observer;
 
-// ESTADO DEL PLAYER
+// ESTADO DEL PLAYER & SESIÓN
 let player; 
 let isPlayerReady = false;
 let currentPlayerTitle = ''; 
+// 🆕 NUEVO: Set para evitar repetir videos en el autoplay (Anti-Loop)
+let sessionWatchedIds = new Set(); 
 
 // ELEMENTOS DOM
 const fixedPlayerContainer = document.getElementById('fixed-player-container');
@@ -104,7 +106,6 @@ function switchView(viewName) {
         }
     }
     
-    // Si hay reproductor, ajustar padding
     if (viewName !== 'config' && fixedPlayerContainer.classList.contains('fixed-player-active')) {
         body.classList.add('body-push-down');
     }
@@ -249,15 +250,16 @@ async function searchVideos(isNewSearch = true) {
 }
 
 // =================================================================
-// 5. REPRODUCTOR & AUTOPLAY (MEJORADO)
+// 5. REPRODUCTOR & AUTOPLAY (ANTI-LOOP)
 // =================================================================
 
 function playVideo(videoId, title, videoObj = null) {
-    // Guardamos referencia
+    // 🆕 Agregamos el ID actual a la lista de "vistos en esta sesión"
+    sessionWatchedIds.add(videoId);
+    
     currentPlayerTitle = title;
     if (videoObj) addToHistory(videoObj);
 
-    // Preparamos HTML
     fixedPlayerContainer.innerHTML = `
         <div class="video-player-wrapper">
             <div id="yt-player"></div>
@@ -267,14 +269,12 @@ function playVideo(videoId, title, videoObj = null) {
     
     document.getElementById('close-player-btn').addEventListener('click', closePlayer);
     
-    // Mostrar con CSS
     fixedPlayerContainer.classList.remove('fixed-player-hidden');
     fixedPlayerContainer.classList.add('fixed-player-active');
     body.classList.add('body-push-down');
     
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
-    // Inicializar YouTube Player
     if (isPlayerReady) {
         if (player && typeof player.destroy === 'function') {
             try { player.destroy(); } catch(e) {}
@@ -286,7 +286,7 @@ function playVideo(videoId, title, videoObj = null) {
             videoId: videoId,
             playerVars: {
                 'autoplay': 1,
-                'playsinline': 1, // Clave para móviles
+                'playsinline': 1,
                 'rel': 0,
                 'modestbranding': 1,
                 'controls': 1
@@ -297,21 +297,21 @@ function playVideo(videoId, title, videoObj = null) {
             }
         });
     } else {
-        // Fallback Iframe Simple
         fixedPlayerContainer.innerHTML = `<div class="video-player-wrapper"><iframe class="video-player" src="https://www.youtube.com/embed/${videoId}?autoplay=1" allowfullscreen></iframe></div>`;
     }
 }
 
 function onPlayerError(event) {
     console.error("Error Player:", event.data);
-    showToast("Video no disponible, saltando...", "warning");
+    showToast("Saltando video no disponible...", "warning");
+    // Si falla, buscamos otro (la función ya filtra los repetidos)
     if(player) fetchAndPlayRelated(player.getVideoData().video_id, currentPlayerTitle);
 }
 
 function onPlayerStateChange(event) {
     // 0 = ENDED
     if (event.data === 0) {
-        console.log("🎬 Terminado. Buscando siguiente...");
+        console.log("🎬 Terminado. Buscando siguiente video NUEVO...");
         const currentId = player.getVideoData().video_id;
         fetchAndPlayRelated(currentId, currentPlayerTitle);
     }
@@ -321,7 +321,6 @@ async function fetchAndPlayRelated(currentVideoId, queryTitle) {
     if (!API_KEY) return;
     showToast('⏳ Buscando siguiente...', 'info');
 
-    // Buscamos por Título (más seguro que relatedToVideoId)
     const cleanQuery = queryTitle.replace(/["']/g, ""); 
 
     const params = new URLSearchParams({
@@ -329,7 +328,7 @@ async function fetchAndPlayRelated(currentVideoId, queryTitle) {
         q: cleanQuery, 
         type: 'video',
         key: API_KEY,
-        maxResults: 10,
+        maxResults: 15, // Pedimos unos cuantos para tener variedad
         safeSearch: 'strict',
         videoEmbeddable: 'true'
     });
@@ -339,20 +338,43 @@ async function fetchAndPlayRelated(currentVideoId, queryTitle) {
         const data = await response.json();
 
         if (data.items && data.items.length > 0) {
-            // Filtramos ID actual y palabras prohibidas
+            // 🆕 FILTRADO INTELIGENTE:
+            // 1. Que no sea el actual.
+            // 2. Que no sea prohibido.
+            // 3. Que NO esté en sessionWatchedIds (videos ya vistos en esta sentada).
             const nextSafeVideo = data.items.find(video => 
                 video.id.videoId !== currentVideoId && 
-                !filterVideo(video.snippet)
+                !filterVideo(video.snippet) &&
+                !sessionWatchedIds.has(video.id.videoId)
             );
 
             if (nextSafeVideo) {
-                console.log(`▶️ Siguiente: ${nextSafeVideo.snippet.title}`);
+                console.log(`▶️ Siguiente (Nuevo): ${nextSafeVideo.snippet.title}`);
+                
                 currentPlayerTitle = nextSafeVideo.snippet.title;
+                // Lo marcamos como visto ANTES de darle play para que no salga de nuevo
+                sessionWatchedIds.add(nextSafeVideo.id.videoId);
+                
                 addToHistory(nextSafeVideo);
-                // Carga fluida
                 player.loadVideoById(nextSafeVideo.id.videoId);
             } else {
-                showToast('Fin de reproducción automática', 'warning');
+                // Si ya vimos TODOS los relacionados directos, limpiamos la memoria
+                // para permitir repetir en vez de cortar la reproducción.
+                console.log("⚠️ Ya viste todos los relacionados. Reiniciando ciclo...");
+                sessionWatchedIds.clear();
+                // Intentamos de nuevo (recursivo, una sola vez)
+                sessionWatchedIds.add(currentVideoId); // Protegemos el actual
+                showToast('Ciclo de videos reiniciado', 'info');
+                
+                // Buscamos cualquier otro seguro de la lista original
+                const resetVideo = data.items.find(video => 
+                    video.id.videoId !== currentVideoId && !filterVideo(video.snippet)
+                );
+                
+                if(resetVideo) {
+                     player.loadVideoById(resetVideo.id.videoId);
+                     currentPlayerTitle = resetVideo.snippet.title;
+                }
             }
         }
     } catch (error) {
@@ -363,6 +385,10 @@ async function fetchAndPlayRelated(currentVideoId, queryTitle) {
 function closePlayer() {
     fixedPlayerContainer.classList.add('fixed-player-hidden');
     fixedPlayerContainer.classList.remove('fixed-player-active');
+    
+    // Al cerrar, limpiamos la sesión para que si vuelve a abrir
+    // pueda ver los mismos videos si quiere.
+    sessionWatchedIds.clear();
     
     if(player && typeof player.destroy === 'function') {
         player.destroy();
