@@ -2,8 +2,12 @@
 <html lang="es" data-theme="cupcake">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube Filtro de Contenido Piloto</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#ffffff">
+    <title>YouTube Filtro Kids</title>
+
+    <link rel="preconnect" href="https://i.ytimg.com">
+    <link rel="preconnect" href="https://www.googleapis.com">
 
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
     <script src="https://cdn.tailwindcss.com"></script>
@@ -11,161 +15,133 @@
 
     <link rel="stylesheet" href="style.css">
 </head>
-<body class="bg-base-200 min-h-screen pb-20 lg:pb-0">
+<body class="bg-base-200 min-h-screen pb-20 lg:pb-0 flex flex-col">
+
     <nav class="fixed top-0 left-0 right-0 z-40 bg-base-100 shadow-md p-2 hidden lg:block">
-        <div class="container mx-auto sm:max-w-xl lg:max-w-4xl xl:max-w-6xl flex justify-center space-x-8">
-            <button onclick="hideSections('top')" class="btn btn-ghost btn-sm" aria-label="Ir a Inicio">Inicio</button>
-            <button onclick="hideSections('search-bar')" class="btn btn-ghost btn-sm" aria-label="Ir a Búsqueda">Buscar</button>
-            <button onclick="hideSections('history-section')" class="btn btn-ghost btn-sm" aria-label="Ir a Historial">Historial</button>
-            <button onclick="hideSections('config-container')" class="btn btn-ghost btn-sm" aria-label="Ir a Configuración">Configuración</button>
+        <div class="container mx-auto flex justify-center space-x-8">
+            <button onclick="switchView('home')" class="btn btn-ghost btn-sm">Inicio (Historial)</button>
+            <button onclick="switchView('search')" class="btn btn-ghost btn-sm">Buscar</button>
+            <button onclick="switchView('config')" class="btn btn-ghost btn-sm">Configuración</button>
         </div>
     </nav>
 
-    <div id="fixed-player-container" class="fixed-player-hidden z-30 lg:top-14">
-        </div>
+    <div id="fixed-player-container" class="fixed-player-hidden z-50 lg:top-14 bg-black"></div>
 
-    <div class="container mx-auto p-4 sm:max-w-xl lg:max-w-4xl xl:max-w-6xl lg:pt-[100px]">
+    <div class="container mx-auto p-4 sm:max-w-xl lg:max-w-4xl xl:max-w-6xl lg:pt-[80px] flex-grow">
 
-        <div id="toogle" class="flex justify-between items-center mt-4 mr-2 mb-4 lg:mt-0">
-            <h1 class="text-3xl font-bold text-primary">Buscador y Filtro</h1>
+        <div id="header-mobile" class="flex justify-between items-center mt-2 mb-4 lg:mt-0">
+            <h1 class="text-2xl font-bold text-primary tracking-tight">YT Kids Filter</h1>
 
-            <label class="flex cursor-pointer gap-2" title="Cambiar tema Claro/Oscuro">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.2 4.2l1.4 1.4M18.4 18.4l1.4 1.4M1 12h2M21 12h2M4.2 19.8l1.4-1.4M18.4 5.6l1.4-1.4"/></svg>
-                <input type="checkbox" value="night" class="toggle theme-controller" id="theme-toggle"/>
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+            <label class="swap swap-rotate">
+                <input type="checkbox" class="theme-controller" value="night" id="theme-toggle"/>
+                <svg class="swap-on fill-current w-8 h-8" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M21.64,13a1,1,0,0,0-1.05-.14,8.05,8.05,0,0,1-3.37.73A8.15,8.15,0,0,1,9.08,5.49a8.59,8.59,0,0,1,.25-2A1,1,0,0,0,8,2.36,10.14,10.14,0,1,0,22,14.05,1,1,0,0,0,21.64,13Zm-9.5,6.69A8.14,8.14,0,0,1,7.08,5.22v.27A10.15,10.15,0,0,0,17.22,15.63a9.79,9.79,0,0,0,2.1-.22A8.11,8.11,0,0,1,12.14,19.73Z"/></svg>
+                <svg class="swap-off fill-current w-8 h-8" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5.64,17l-.71.71a1,1,0,0,0,0,1.41,1,1,0,0,0,1.41,0l.71-.71A1,1,0,0,0,5.64,17ZM5,12a1,1,0,0,0-1-1H3a1,1,0,0,0,0,2H4A1,1,0,0,0,5,12Zm7-7a1,1,0,0,0,1-1V3a1,1,0,0,0-2,0V4A1,1,0,0,0,12,5ZM5.64,7.05a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.41l-.71-.71A1,1,0,0,0,4.93,6.34Zm12,.29a1,1,0,0,0,.7-.29l.71-.71a1,1,0,1,0-1.41-1.41L17,5.64a1,1,0,0,0,0,1.41A1,1,0,0,0,17.66,7.34ZM21,11H20a1,1,0,0,0,0,2h1a1,1,0,0,0,0-2Zm-9,8a1,1,0,0,0-1,1v1a1,1,0,0,0,2,0V20A1,1,0,0,0,12,19ZM18.36,17A1,1,0,0,0,17,18.36l.71.71a1,1,0,0,0,1.41,0,1,1,0,0,0,0-1.41ZM12,6.5A5.5,5.5,0,1,0,17.5,12,5.51,5.51,0,0,0,12,6.5Zm0,9A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z"/></svg>
             </label>
         </div>
-        <div id="config-container" class="collapse bg-base-100 shadow-md mb-4">
+
+        <div id="config-container" class="collapse bg-base-100 shadow-md mb-4 rounded-box">
             <input type="checkbox" id="config-toggle-cb" /> 
-            <label class="collapse-title font-medium" for="config-toggle-cb" id="toggle-config-btn">
-                ⚙️ Configuración (Mostrar/Ocultar)
+            <label class="collapse-title font-medium flex items-center gap-2" for="config-toggle-cb">
+                <i data-lucide="settings" class="w-5 h-5"></i> Configuración (API & Filtros)
             </label>
             <div class="collapse-content" id="config-section">
                 <div class="form-control w-full mb-4">
-                    <label class="label"><span class="label-text">Clave de API (Guardada localmente)</span></label>
+                    <label class="label"><span class="label-text font-bold">Clave de API</span></label>
                     <div class="join">
-                        <input type="text" id="api-key-input" placeholder="Introduce tu Clave de API" class="input input-bordered join-item w-full" aria-label="Clave de API de YouTube">
-                        <button onclick="saveApiKey()" class="btn btn-primary join-item">Guardar</button>
+                        <input type="password" id="api-key-input" placeholder="Tu API Key aquí" class="input input-bordered join-item w-full input-sm md:input-md">
+                        <button onclick="saveApiKey()" class="btn btn-primary join-item btn-sm md:btn-md">Guardar</button>
                     </div>
                 </div>
                 <div class="form-control w-full mb-4">
-                    <label class="label"><span class="label-text">Palabras Clave de Filtro (Separadas por coma)</span></label>
+                    <label class="label"><span class="label-text font-bold">Palabras Prohibidas (Filtro)</span></label>
                     <div class="join">
-                        <input type="text" id="filter-keywords-input" placeholder="ej: halloween, bruja, miedo" class="input input-bordered join-item w-full" aria-label="Palabras clave de filtro">
-                        <button onclick="saveKeywords()" class="btn btn-primary join-item">Guardar</button>
+                        <input type="text" id="filter-keywords-input" placeholder="ej: miedo, terror, gritos" class="input input-bordered join-item w-full input-sm md:input-md">
+                        <button onclick="saveKeywords()" class="btn btn-primary join-item btn-sm md:btn-md">Guardar</button>
                     </div>
                 </div>
-                <div id="config-message-container" class="mt-2"></div>
-            </div>
-            <div class="card w-full max-w-4xl bg-base-100 shadow-xl border border-base-200">
+
                 <div class="divider"></div>
-    <div class="card-body">
-        <p class="text-base-content/70">
-            Para que la app funcione correctamente, precisás una **Clave de API** y configurar tus palabras clave.
-        </p>
-
-
-        <section class="mb-8">
-            <h3 class="text-xl font-bold mb-3 text-secondary">
-            Cómo Obtener la Clave de API
-            </h3>
-
-            <ul class="steps steps-vertical lg:steps-horizontal w-full text-left">
-                <li class="step step-primary">Cuenta de Google</li>
-                <li class="step step-primary">
-                    <a href="https://console.cloud.google.com/" target="_blank" class="link link-hover font-semibold">
-                        Crear Proyecto en Google (ir a Google Cloud Console)
-                    </a>
-                </li>
-                <li class="step step-primary">
-                    Buscar y Habilitar **"YouTube Data API v3"**
-                </li>
-                <li class="step step-primary">
-                    Crear Credencial → Clave de API
-                </li>
-                <li class="step step-primary">¡Copiar esa clave!</li>
-            </ul>
-
-            <div class="divider"></div>
-            <div class="alert mt-6 shadow-lg bg-info/10 text-info">
-                <div>
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" class="stroke-current flex-shrink-0 w-6 h-6"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                    <div>
-                        <h4 class="font-bold">Video Tutorial</h4>
-                        <a href="https://www.youtube.com/watch?v=zVJKcbjE52w" target="_blank" class="link link-hover text-sm">
-                            Cómo crear la API Key de YouTube (Tutorial)
-                        </a>
+                <section class="mb-4 text-sm">
+                    <h3 class="font-bold mb-2 text-secondary">¿Cómo consigo la Clave de API?</h3>
+                    <ul class="steps steps-vertical w-full">
+                        <li class="step step-primary text-xs">Ir a Google Cloud Console</li>
+                        <li class="step step-primary text-xs">Crear Proyecto y habilitar "YouTube Data API v3"</li>
+                        <li class="step step-primary text-xs">Crear Credencial → API Key</li>
+                    </ul>
+                    <div class="alert mt-4 shadow-sm bg-base-200">
+                        <i data-lucide="video" class="w-5 h-5"></i>
+                        <div>
+                            <div class="font-bold text-xs">Video Tutorial</div>
+                            <a href="https://www.youtube.com/watch?v=zVJKcbjE52w" target="_blank" class="link link-hover text-xs text-primary">
+                                Ver cómo crear la API Key paso a paso
+                            </a>
+                        </div>
                     </div>
-                </div>
+                </section>
             </div>
-        </section>
+        </div>
+
+        <div id="search-bar-container" class="hidden w-full mb-4 shadow-sm">
+            <div class="join w-full">
+                <input type="text" id="query" placeholder="Buscar videos nuevos..." class="input input-bordered join-item w-full focus:outline-none" onkeydown="if(event.key === 'Enter') searchVideos(true)">
+                <button onclick="searchVideos(true)" class="btn btn-primary join-item px-6">
+                    <i data-lucide="search" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+
+        <h2 id="section-title" class="text-xl font-bold mb-4 flex items-center gap-2 pl-1">
+            </h2>
+
+        <div id="results" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-4 min-h-[200px]">
+            </div>
+
+        <div id="loading-indicator" class="w-full flex justify-center py-4 hidden">
+            <span class="loading loading-spinner loading-lg text-primary"></span>
+        </div>
+
+        <div id="scroll-sentinel" class="h-4 w-full"></div>
 
     </div>
-</div>
-        </div>
 
-        <hr class="my-4 border-base-300">
-        <div id="search-bar" class="join w-full mb-6">
-            <input type="text" id="query" placeholder="Escribe tu búsqueda (ej: videos infantiles)" class="input input-bordered join-item w-full" aria-label="Término de búsqueda de YouTube">
-            <button onclick="searchVideos()" class="btn btn-primary join-item" aria-label="Botón de buscar videos">Buscar</button>
-        </div>
-        <div id="history-section" class="mb-6">
-            <h2 class="text-xl font-semibold mb-2">🕒 Vistos Recientemente</h2>
-            <div id="viewed-history" class="video-list space-y-4">
-            </div>
-        </div>
-
-        <hr class="my-4 border-base-300">
-        <div id="results">
-            <div class="alert alert-info">
-                <span>Resultados de la búsqueda aparecerán aquí.</span>
-            </div>
-        </div>
-    </div>
-    <footer class="footer p-10 bg-base-300 text-base-content mt-12">
+    <footer id="main-footer" class="footer p-10 bg-base-300 text-base-content mt-8">
         <div class="w-full text-center">
             <img src="avatarJuanRey.jpg" 
-                 alt="Avatar de Juan Rey" 
+                 onerror="this.src='https://ui-avatars.com/api/?name=Juan+Rey&background=random'" 
+                 alt="Avatar" 
                  class="footer-avatar w-24 h-24 rounded-full mx-auto mb-4 border-4 border-primary shadow-lg"/>
 
-            <p class="footer-mail text-lg font-semibold mb-1">fernan2lopezkto@gmail.com</p>
-            <p class="footer-description text-sm max-w-lg mx-auto mb-4 opacity-80">
-                App hecha para aplicar conocimientos de programación y desarrollo web. ¡Espero que te haya gustado!
+            <p class="text-lg font-semibold mb-1">Juan Rey</p>
+            <p class="text-sm max-w-lg mx-auto mb-4 opacity-80">
+                App hecha para aplicar conocimientos de programación y desarrollo web. ¡Espero que te sirva!
             </p>
 
             <div class="flex justify-center space-x-4">
-                <a href="https://www.linkedin.com/in/juan-rey-fernan2lopezkto/" target="_blank" rel="noopener noreferrer" class="link hover:text-primary transition duration-300" aria-label="Linkedin">
-                    <i data-lucide="linkedin" class="w-6 h-6"></i>
-                </a>
-                <a href="https://github.com/fernan2lopezkto/qizbible" target="_blank" rel="noopener noreferrer" class="link hover:text-primary transition duration-300" aria-label="Github">
-                    <i data-lucide="github" class="w-6 h-6"></i>
-                </a>
-                <a href="https://www.instagram.com/fernan2lopezkto/" target="_blank" rel="noopener noreferrer" class="link hover:text-primary transition duration-300" aria-label="Instagram">
-                    <i data-lucide="instagram" class="w-6 h-6"></i>
-                </a>
-                <a href="https://linktr.ee/fernan2lopezkto" target="_blank" rel="noopener noreferrer" class="link hover:text-primary transition duration-300" aria-label="Mi Web">
-                    <i data-lucide="globe" class="w-6 h-6"></i>
-                </a>
+                <a href="https://www.linkedin.com/in/juan-rey-fernan2lopezkto/" target="_blank" class="link hover:text-primary transition" aria-label="Linkedin"><i data-lucide="linkedin"></i></a>
+                <a href="https://github.com/fernan2lopezkto/qizbible" target="_blank" class="link hover:text-primary transition" aria-label="Github"><i data-lucide="github"></i></a>
+                <a href="https://www.instagram.com/fernan2lopezkto/" target="_blank" class="link hover:text-primary transition" aria-label="Instagram"><i data-lucide="instagram"></i></a>
+                <a href="https://linktr.ee/fernan2lopezkto" target="_blank" class="link hover:text-primary transition" aria-label="Web"><i data-lucide="globe"></i></a>
             </div>
         </div>
     </footer>
-    <div class="btm-nav lg:hidden z-50 bg-base-100 shadow-xl rounded-t-2xl">
-        <button onclick="hideSections('top')" data-target="top" aria-label="Ir a Inicio" class="p-3 active">
+
+    <div class="btm-nav lg:hidden z-50 bg-base-100 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] rounded-t-2xl border-t border-base-200">
+        <button onclick="switchView('home')" data-target="home" class="active text-primary bg-transparent">
             <i data-lucide="home" class="w-6 h-6"></i>
+            <span class="btm-nav-label text-xs mt-1">Inicio</span>
         </button>
 
-        <button onclick="hideSections('search-bar')" data-target="search-bar" aria-label="Ir a Búsqueda" class="p-3">
+        <button onclick="switchView('search')" data-target="search" class="text-neutral bg-transparent">
             <i data-lucide="search" class="w-6 h-6"></i>
+            <span class="btm-nav-label text-xs mt-1">Buscar</span>
         </button>
 
-        <button onclick="hideSections('history-section')" data-target="history-section" aria-label="Ir a Historial" class="p-3">
-            <i data-lucide="history" class="w-6 h-6"></i>
-        </button>
-
-        <button onclick="hideSections('config-container')" data-target="config-container" aria-label="Ir a Configuración" class="p-3">
+        <button onclick="switchView('config')" data-target="config" class="text-neutral bg-transparent">
             <i data-lucide="settings" class="w-6 h-6"></i>
+            <span class="btm-nav-label text-xs mt-1">Ajustes</span>
         </button>
     </div>
+
     <script src="script.js" defer></script>
 </body>
 </html>

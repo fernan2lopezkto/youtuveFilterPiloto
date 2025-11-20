@@ -1,106 +1,105 @@
-/* 1. El 'wrapper' (contenedor) debe tener posición relativa */
-.video-player-wrapper {
-    position: relative;
-    /* Mantenemos el aspecto 16:9 para el video. ESTO DA LA ALTURA */
-    padding-top: 56.25%; /* 16:9 Aspect Ratio (divide 9 por 16) */
-    height: 0;
-    overflow: hidden;
-    background-color: #000; /* Fondo negro mientras carga */
+html {
+    scroll-behavior: smooth;
+    overscroll-behavior-y: none; 
 }
 
-/* 2. El iframe y el overlay son absolutos DENTRO del wrapper */
+body {
+    -webkit-overflow-scrolling: touch; 
+}
+
+/* Estilos del Video */
+.video-player-wrapper {
+    position: relative;
+    width: 100%;
+    padding-top: 56.25%; /* 16:9 */
+    background-color: #000;
+    overflow: hidden;
+    border-radius: 0.75rem;
+}
+
 .video-player,
 .video-overlay,
-.video-player-wrapper img { /* Incluimos la imagen del thumbnail */
+.video-player-wrapper img {
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
     border: none;
+    object-fit: cover;
 }
 
-/* 3. El overlay es transparente y se pone ENCIMA de todo */
 .video-overlay {
     z-index: 10;
     cursor: pointer;
-    background-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.4));
+    background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 50%);
     display: flex;
     justify-content: center;
     align-items: center;
+    transition: opacity 0.2s;
 }
 
-/* -------------------------------------- */
-/* Estilos del Reproductor Fijo Superior */
-/* -------------------------------------- */
+.card:active .video-overlay {
+    background-color: rgba(0,0,0,0.3);
+}
 
+/* Reproductor Fijo Superior */
 #fixed-player-container {
     position: fixed;
+    top: 0;
     left: 0;
     right: 0;
     width: 100%;
-    height: auto; 
-    padding-top: 0; 
-    overflow: hidden;
-    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
-    background-color: var(--fallback-b1, oklch(var(--b1)));
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    top: 0; 
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
 }
 
-/* Clase para ocultarlo (movido fuera de la vista) */
+@media (min-width: 1024px) {
+    #fixed-player-container {
+        width: 80%;
+        left: 10%;
+        top: 1rem;
+        border-radius: 1rem;
+        overflow: hidden;
+    }
+}
+
 .fixed-player-hidden {
-    transform: translateY(-100%); 
-    box-shadow: none;
+    transform: translateY(-150%);
+    pointer-events: none;
 }
 
-/* Clase cuando el reproductor está activo */
 .fixed-player-active {
     transform: translateY(0);
 }
 
-/* En escritorio, el reproductor tiene la altura completa (16:9) */
+/* Empuje del contenido */
+.body-push-down {
+    padding-top: calc(56.25vw + 1rem);
+}
+
 @media (min-width: 1024px) {
-    #fixed-player-container {
-        left: 50%;
-        transform: translateX(-50%);
-        max-width: calc(100% - 2rem); 
-        width: 100%;
-        height: auto;
-        padding-top: 0; 
-    }
-}
-
-/* -------------------------------------- */
-/* NUEVO: Clase para empujar el contenido cuando el reproductor fijo está activo */
-/* -------------------------------------- */
-
-@media (max-width: 1023px) { /* Solo para móviles */
     .body-push-down {
-        padding-top: calc(56.25vw + 1rem); /* Altura del video + un margen */
+        padding-top: calc(40vw + 2rem);
     }
 }
 
-/* -------------------------------------- */
-
-/* Clases de texto que ya no usamos (DaisyUI las maneja) */
-.id-text {
-    font-size: 12px;
-    color: #777;
-    opacity: 0.7;
+/* Animación */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
 }
 
-/* Ajustes para móviles */
-@media (max-width: 1023px) {
-    /* El padding-bottom es necesario para que el contenido no quede oculto bajo el btm-nav */
-    body {
-        padding-bottom: 5rem; 
-    }
+.video-item-anim {
+    animation: fadeIn 0.4s ease-out forwards;
 }
 
-/* Para que los resultados se vean en forma de grid */
-.video-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 1rem;
+/* Footer Avatar */
+.footer-avatar {
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.footer-avatar:hover {
+    transform: scale(1.05);
 }
