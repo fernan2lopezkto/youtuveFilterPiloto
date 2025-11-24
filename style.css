@@ -1,13 +1,18 @@
+/* =========================================
+   CONFIGURACIÓN BASE
+   ========================================= */
 html {
     scroll-behavior: smooth;
-    overscroll-behavior-y: none; 
+    overscroll-behavior-y: none; /* Evita rebote en móviles */
 }
 
 body {
     -webkit-overflow-scrolling: touch; 
 }
 
-/* --- ESTILOS DEL REPRODUCTOR (OPTIMIZADO) --- */
+/* =========================================
+   ESTILOS DEL REPRODUCTOR (BASE / MÓVIL)
+   ========================================= */
 
 /* El contenedor fijo principal */
 #fixed-player-container {
@@ -16,43 +21,33 @@ body {
     left: 0;
     right: 0;
     width: 100%;
-    z-index: 100; /* Alto Z-Index para estar sobre todo */
-    background-color: #000; /* Fondo NEGRO para evitar transparencias */
-    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 100; /* Siempre encima de todo */
+    background-color: #000; /* Fondo NEGRO sólido */
+    
+    /* Animación base (para móvil es vertical) */
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
-/* El envoltorio interno del video (16:9) */
+/* Estado oculto (Móvil): Se va para ARRIBA */
+.fixed-player-hidden {
+    transform: translateY(-100%);
+    pointer-events: none;
+}
+
+/* Estado activo (Móvil): Baja a su lugar */
+.fixed-player-active {
+    transform: translateY(0);
+}
+
+/* El envoltorio interno del video (Ratio 16:9) */
 .video-player-wrapper {
     position: relative;
     width: 100%;
     padding-top: 56.25%; /* 16:9 Aspect Ratio */
     background-color: #000;
     overflow: hidden;
-    border-radius: 0; /* Cuadrado en móvil para full width */
-}
-
-/* En pantallas grandes, lo hacemos flotante y redondeado */
-@media (min-width: 1024px) {
-    #fixed-player-container {
-        width: 80%;
-        left: 10%;
-        top: 1rem;
-        overflow: visible; /* Para la sombra */
-    }
-    .video-player-wrapper {
-        border-radius: 1rem;
-    }
-}
-
-/* Clases para mostrar/ocultar el reproductor con animación */
-.fixed-player-hidden {
-    transform: translateY(-100%); /* Se esconde hacia ARRIBA */
-    pointer-events: none;
-}
-
-.fixed-player-active {
-    transform: translateY(0); /* Baja a su posición */
+    border-radius: 0; /* Cuadrado en móvil para aprovechar ancho */
 }
 
 /* Elementos dentro del wrapper */
@@ -69,7 +64,9 @@ body {
     object-fit: cover;
 }
 
-/* --- ESTILOS DE LA TARJETA (Overlay) --- */
+/* =========================================
+   TARJETAS Y OVERLAYS
+   ========================================= */
 .video-overlay {
     z-index: 10;
     cursor: pointer;
@@ -84,19 +81,7 @@ body {
     background-color: rgba(0,0,0,0.3);
 }
 
-/* --- EMPUJE DEL CONTENIDO (Padding Top dinámico) --- */
-.body-push-down {
-    /* Altura del video (56.25vw) + un poco de margen */
-    padding-top: calc(56.25vw + 1rem);
-}
-
-@media (min-width: 1024px) {
-    .body-push-down {
-        padding-top: calc(40vw + 2rem);
-    }
-}
-
-/* --- ANIMACIONES Y EXTRAS --- */
+/* Animación de entrada para los videos de la lista */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
@@ -106,6 +91,7 @@ body {
     animation: fadeIn 0.4s ease-out forwards;
 }
 
+/* Avatar del footer */
 .footer-avatar {
     object-fit: cover;
     transition: transform 0.3s ease;
@@ -114,6 +100,16 @@ body {
 .footer-avatar:hover {
     transform: scale(1.05);
 }
+
+/* =========================================
+   LÓGICA DE EMPUJE (MOBILE DEFAULT)
+   ========================================= */
+/* Cuando el reproductor está activo, bajamos el contenido */
+.body-push-down {
+    padding-top: calc(56.25vw + 1rem); /* Altura video móvil + margen */
+}
+
+
 /* =========================================
    DISEÑO PARA TV Y ESCRITORIO (LG > 1024px)
    ========================================= */
@@ -126,60 +122,57 @@ body {
         top: 5.5rem !important; /* Debajo del navbar */
         left: 1.5rem !important; /* Margen izquierdo */
         
-        /* Tamaño: Más chico, como pediste (aprox 35-40% del ancho) */
+        /* Tamaño: 38% del ancho (aprox) para dejar lugar a la lista */
         width: 38% !important; 
-        max-width: 600px !important; /* Que no se haga gigante */
+        max-width: 600px !important; 
         
         /* Estética */
         border-radius: 1rem !important;
         box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
         
-        /* Reseteamos transformaciones anteriores */
+        /* Reseteamos transformaciones base */
         transform: none; 
     }
+    
+    .video-player-wrapper {
+        border-radius: 1rem !important;
+    }
 
-    /* Comportamiento al ocultarse (Salida hacia la IZQUIERDA en vez de arriba) */
+    /* Comportamiento al ocultarse (Salida hacia la IZQUIERDA) */
     .fixed-player-hidden {
-        transform: translateX(-150%) !important; /* Se esconde a la izquierda */
+        transform: translateX(-150%) !important; 
         opacity: 0;
-        pointer-events: none;
     }
 
     .fixed-player-active {
-        transform: translateX(0) !important; /* Aparece en su lugar */
+        transform: translateX(0) !important;
         opacity: 1;
     }
 
-    /* 2. EL CONTENIDO (Resultados/Historial a la Derecha) */
+    /* 2. EL CONTENIDO (Se mueve a la DERECHA) */
     
-    /* Esta clase la pone el JS cuando hay video. 
-       En TV, en vez de bajar el contenido, lo empujamos a la DERECHA */
+    /* Cuando hay video, en vez de bajar, empujamos a la derecha */
     .body-push-down {
         /* Reseteamos el padding-top gigante del móvil */
         padding-top: 6rem !important; 
         
-        /* Empujamos todo el contenido a la derecha para dejar lugar al video */
+        /* Empujamos todo el contenido a la derecha (40% + margen) */
         padding-left: 42% !important; 
         
         /* Transición suave */
         transition: padding-left 0.3s ease, padding-top 0.3s ease;
     }
 
-    /* Ajustamos el grid de videos para que se vean bien en el espacio restante */
-    .body-push-down #results {
-        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
+    /* Ajustamos el grid de videos para que sean más chicos en el espacio que queda */
+    .body-push-down #results,
+    .body-push-down #viewed-history {
+        /* Videos más compactos en la columna derecha */
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
     }
 
-    /* 3. AJUSTES MENORES */
-    
-    /* El wrapper del video mantiene su 16:9 pero respetando el ancho del contenedor */
-    .video-player-wrapper {
-        border-radius: 1rem !important;
-    }
-    
-    /* Centrar la búsqueda si no hay video */
+    /* 3. AJUSTES GENERALES TV */
     .container {
         transition: padding-left 0.3s ease;
-        max-width: 95% !important; /* Usar todo el ancho de la tele */
+        max-width: 98% !important; /* Usar todo el ancho de la tele */
     }
 }
