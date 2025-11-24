@@ -114,3 +114,72 @@ body {
 .footer-avatar:hover {
     transform: scale(1.05);
 }
+/* =========================================
+   DISEÑO PARA TV Y ESCRITORIO (LG > 1024px)
+   ========================================= */
+
+@media (min-width: 1024px) {
+
+    /* 1. EL REPRODUCTOR (Columna Izquierda Fija) */
+    #fixed-player-container {
+        /* Posición */
+        top: 5.5rem !important; /* Debajo del navbar */
+        left: 1.5rem !important; /* Margen izquierdo */
+        
+        /* Tamaño: Más chico, como pediste (aprox 35-40% del ancho) */
+        width: 38% !important; 
+        max-width: 600px !important; /* Que no se haga gigante */
+        
+        /* Estética */
+        border-radius: 1rem !important;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
+        
+        /* Reseteamos transformaciones anteriores */
+        transform: none; 
+    }
+
+    /* Comportamiento al ocultarse (Salida hacia la IZQUIERDA en vez de arriba) */
+    .fixed-player-hidden {
+        transform: translateX(-150%) !important; /* Se esconde a la izquierda */
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .fixed-player-active {
+        transform: translateX(0) !important; /* Aparece en su lugar */
+        opacity: 1;
+    }
+
+    /* 2. EL CONTENIDO (Resultados/Historial a la Derecha) */
+    
+    /* Esta clase la pone el JS cuando hay video. 
+       En TV, en vez de bajar el contenido, lo empujamos a la DERECHA */
+    .body-push-down {
+        /* Reseteamos el padding-top gigante del móvil */
+        padding-top: 6rem !important; 
+        
+        /* Empujamos todo el contenido a la derecha para dejar lugar al video */
+        padding-left: 42% !important; 
+        
+        /* Transición suave */
+        transition: padding-left 0.3s ease, padding-top 0.3s ease;
+    }
+
+    /* Ajustamos el grid de videos para que se vean bien en el espacio restante */
+    .body-push-down #results {
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)) !important;
+    }
+
+    /* 3. AJUSTES MENORES */
+    
+    /* El wrapper del video mantiene su 16:9 pero respetando el ancho del contenedor */
+    .video-player-wrapper {
+        border-radius: 1rem !important;
+    }
+    
+    /* Centrar la búsqueda si no hay video */
+    .container {
+        transition: padding-left 0.3s ease;
+        max-width: 95% !important; /* Usar todo el ancho de la tele */
+    }
+}
