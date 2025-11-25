@@ -123,7 +123,7 @@ body {
         left: 1.5rem !important; /* Margen izquierdo */
         
         /* Tamaño: 38% del ancho (aprox) para dejar lugar a la lista */
-        width: 38% !important; 
+        width: %60 !important; 
         max-width: 600px !important; 
         
         /* Estética */
@@ -157,7 +157,7 @@ body {
         padding-top: 6rem !important; 
         
         /* Empujamos todo el contenido a la derecha (40% + margen) */
-        padding-left: 42% !important; 
+        padding-left: 64% !important; 
         
         /* Transición suave */
         transition: padding-left 0.3s ease, padding-top 0.3s ease;
