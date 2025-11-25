@@ -3,7 +3,7 @@
    ========================================= */
 html {
     scroll-behavior: smooth;
-    overscroll-behavior-y: none; /* Evita rebote en móviles */
+    overscroll-behavior-y: none; 
 }
 
 body {
@@ -21,36 +21,34 @@ body {
     left: 0;
     right: 0;
     width: 100%;
-    z-index: 100; /* Siempre encima de todo */
-    background-color: #000; /* Fondo NEGRO sólido */
+    z-index: 100; 
+    background-color: #000; 
     
-    /* Animación base (para móvil es vertical) */
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
 }
 
-/* Estado oculto (Móvil): Se va para ARRIBA */
+/* Estado oculto (Móvil) */
 .fixed-player-hidden {
     transform: translateY(-100%);
     pointer-events: none;
 }
 
-/* Estado activo (Móvil): Baja a su lugar */
+/* Estado activo (Móvil) */
 .fixed-player-active {
     transform: translateY(0);
 }
 
-/* El envoltorio interno del video (Ratio 16:9) */
+/* Wrapper del video (16:9) */
 .video-player-wrapper {
     position: relative;
     width: 100%;
-    padding-top: 56.25%; /* 16:9 Aspect Ratio */
+    padding-top: 56.25%; 
     background-color: #000;
     overflow: hidden;
-    border-radius: 0; /* Cuadrado en móvil para aprovechar ancho */
+    border-radius: 0; 
 }
 
-/* Elementos dentro del wrapper */
 .video-player,
 .video-overlay,
 .video-player-wrapper img,
@@ -81,7 +79,6 @@ body {
     background-color: rgba(0,0,0,0.3);
 }
 
-/* Animación de entrada para los videos de la lista */
 @keyframes fadeIn {
     from { opacity: 0; transform: translateY(10px); }
     to { opacity: 1; transform: translateY(0); }
@@ -91,7 +88,6 @@ body {
     animation: fadeIn 0.4s ease-out forwards;
 }
 
-/* Avatar del footer */
 .footer-avatar {
     object-fit: cover;
     transition: transform 0.3s ease;
@@ -104,33 +100,29 @@ body {
 /* =========================================
    LÓGICA DE EMPUJE (MOBILE DEFAULT)
    ========================================= */
-/* Cuando el reproductor está activo, bajamos el contenido */
 .body-push-down {
-    padding-top: calc(56.25vw + 1rem); /* Altura video móvil + margen */
+    padding-top: calc(56.25vw + 1rem); 
 }
 
 
 /* =========================================
    DISEÑO PARA TV Y ESCRITORIO (LG > 1024px)
    ========================================= */
+/* Aumentamos el tamaño para que se vea bien en la TV */
 
 @media (min-width: 1024px) {
 
-    /* 1. EL REPRODUCTOR (Columna Izquierda Fija) */
+    /* 1. EL REPRODUCTOR (Gigante a la izquierda) */
     #fixed-player-container {
-        /* Posición */
-        top: 5.5rem !important; /* Debajo del navbar */
-        left: 1.5rem !important; /* Margen izquierdo */
+        top: 5.5rem !important; 
+        left: 1.5rem !important; 
         
-        /* Tamaño: 38% del ancho (aprox) para dejar lugar a la lista */
-        width: %60 !important; 
-        max-width: 600px !important; 
+        /* AHORA OCUPA EL 68% DE LA PANTALLA */
+        width: 68% !important; 
+        max-width: none !important; /* Quitamos el límite para que crezca en TV 4K */
         
-        /* Estética */
         border-radius: 1rem !important;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.5) !important;
-        
-        /* Reseteamos transformaciones base */
+        box-shadow: 0 10px 40px rgba(0,0,0,0.7) !important;
         transform: none; 
     }
     
@@ -138,7 +130,7 @@ body {
         border-radius: 1rem !important;
     }
 
-    /* Comportamiento al ocultarse (Salida hacia la IZQUIERDA) */
+    /* Ocultar hacia la izquierda */
     .fixed-player-hidden {
         transform: translateX(-150%) !important; 
         opacity: 0;
@@ -149,30 +141,31 @@ body {
         opacity: 1;
     }
 
-    /* 2. EL CONTENIDO (Se mueve a la DERECHA) */
+    /* 2. EL CONTENIDO (Columna derecha) */
     
-    /* Cuando hay video, en vez de bajar, empujamos a la derecha */
     .body-push-down {
-        /* Reseteamos el padding-top gigante del móvil */
         padding-top: 6rem !important; 
         
-        /* Empujamos todo el contenido a la derecha (40% + margen) */
-        padding-left: 64% !important; 
+        /* Empujamos al 70% (68% del video + 2% margen) */
+        padding-left: 70% !important; 
         
-        /* Transición suave */
         transition: padding-left 0.3s ease, padding-top 0.3s ease;
     }
 
-    /* Ajustamos el grid de videos para que sean más chicos en el espacio que queda */
+    /* 3. FORZAR UNA SOLA COLUMNA DE VIDEOS */
     .body-push-down #results,
     .body-push-down #viewed-history {
-        /* Videos más compactos en la columna derecha */
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
+        /* 1fr fuerza a que sea una sola columna que ocupe el espacio restante */
+        grid-template-columns: 1fr !important; 
+    }
+    
+    /* Ajuste para que las tarjetas de la lista no sean gigantes de alto */
+    .body-push-down .card {
+        flex-direction: row; /* Opcional: Si querés diseño horizontal en la lista */
     }
 
-    /* 3. AJUSTES GENERALES TV */
     .container {
         transition: padding-left 0.3s ease;
-        max-width: 98% !important; /* Usar todo el ancho de la tele */
+        max-width: 98% !important; 
     }
 }
